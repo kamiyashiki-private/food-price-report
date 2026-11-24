@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="食費と冷蔵庫">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>食費と冷蔵庫</title>
+<style>
+/* VOICE: 毎日使う家計簿・在庫アプリ。装飾より速さと読みやすさ
+   IDEA: スマホ標準アプリのグループ化リスト（設定・ヘルスケア・家計簿アプリの作法）
+   PICTURE: 予算バーとカテゴリのドーナツ、期限バッジ付きの在庫リスト、金額入りのカレンダー
+   COLOUR and TYPE: グレーの地に白いカード、アクセントは朱色1色、状態色は緑・橙・赤。システムフォント
+   LAYOUT: 大きな画面タイトル、セクション見出し+角丸リスト、下部タブ、編集はシート（キャンセル／保存） */
+:root{color-scheme:light dark;
+--bg:light-dark(#f2f2f7,#000);--card:light-dark(#fff,#1c1c1e);--fill:light-dark(#e9e9ee,#2c2c2e);
+--ink:light-dark(#111,#f5f5f7);--sub:light-dark(#6c6c72,#98989f);--sep:light-dark(#dcdce1,#38383a);
+--ac:light-dark(#e04f29,#ff6b45);--ac-s:light-dark(#fdece6,#3b1e15);
+--ok:light-dark(#1d9a4b,#32d15a);--warn:light-dark(#bd6c00,#ffa31a);--bad:light-dark(#d9302a,#ff4d44);
+--sun:light-dark(#d9302a,#ff6961);--sat:light-dark(#1f6fd1,#64a8ff)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",Meiryo,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{max-width:600px;margin:0 auto;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);padding:env(safe-area-inset-top) 12px 0 16px}
+.tb{display:flex;align-items:center;gap:2px;min-height:56px}
+.tb h1{flex:1;margin:0;font-size:28px;font-weight:700;line-height:1.2}
+.sync{font-size:13px;color:var(--sub);margin-right:6px}
+.ib{position:relative;width:44px;height:44px;border:0;background:none;color:var(--ac);display:grid;place-items:center;border-radius:12px;flex:none;padding:0}
+.tchip{min-height:32px;border:0;border-radius:99px;background:var(--ok);color:#fff;font-weight:700;padding:0 12px;font-size:14px;font-variant-numeric:tabular-nums;margin-right:4px}
+.tchip[hidden]{display:none}
+svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+main{padding:0 16px 24px}
+.gh{font-size:13px;color:var(--sub);font-weight:400;margin:24px 16px 6px;display:flex;justify-content:space-between;gap:8px;line-height:1.4}
+.gh:first-child{margin-top:4px}
+.group{background:var(--card);border-radius:12px;overflow:hidden}
+.pad{padding:16px}
+.foot{font-size:13px;color:var(--sub);margin:6px 16px 0;line-height:1.5}
+.note{font-size:13px;color:var(--sub);margin:14px 16px 0;line-height:1.5}
+.r{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px;position:relative;width:100%;background:none;border:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+div.r{cursor:default}
+.r+.r::before,.r+.it::before,.it+.it::before,.it+.r::before,.fr+.fr::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--sep)}
+.r .m{flex:1;min-width:0}
+.t1{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.t2{display:block;font-size:13px;color:var(--sub);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.wrap .t1,.wrap .t2{white-space:normal}
+.v{color:var(--sub);white-space:nowrap;font-variant-numeric:tabular-nums}.v.b{color:var(--ink);font-weight:600}
+.chev{width:8px;height:8px;border-right:2px solid var(--sep);border-top:2px solid var(--sep);transform:rotate(45deg);flex:none;margin:0 2px 0 -2px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sub{color:var(--sub)}.small{font-size:13px}.danger{color:var(--bad)}.ok-c{color:var(--ok)}.warn-c{color:var(--warn)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.between{justify-content:space-between}
+.btn{position:relative;min-height:50px;border-radius:12px;border:0;background:var(--ac);color:#fff;font-weight:600;font-size:17px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;width:100%}
+.btn.sec{background:var(--card);color:var(--ac)}.btn.sec.danger{color:var(--bad)}
+.btn.tint{background:var(--ac-s);color:var(--ac)}
+.btn:disabled{opacity:.45;cursor:default}
+.link{border:0;background:none;color:var(--ac);font-size:17px;min-height:44px;padding:0 4px}
+.link.strong{font-weight:600}.link:disabled{opacity:.4}
+.filebtn input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--ac) 55%,transparent);outline-offset:2px}
+.fr{display:flex;align-items:center;gap:12px;min-height:50px;padding:3px 16px;position:relative}
+.fr:focus-within{background:color-mix(in srgb,var(--fill) 50%,transparent)}
+.fr>span:first-child{flex:none;min-width:5.5em}
+.fr input,.fr select{flex:1;min-width:0;border:0;background:none;text-align:right;text-align-last:right;min-height:44px;padding:0;color:var(--sub);font-size:16px;outline:none;appearance:none;-webkit-appearance:none}
+.fr input:focus{color:var(--ink)}
+.fr input[type=checkbox]{flex:none;width:24px;min-height:24px;margin-left:auto;appearance:auto;-webkit-appearance:checkbox}
+.fr .val{margin-left:auto;color:var(--sub);text-align:right}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--ac);margin:0;flex:none}
+.segc{display:flex;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
+.segc button{flex:1;border:0;background:none;border-radius:8px;min-height:40px;font-size:14px;color:var(--ink);padding:0 4px;white-space:nowrap}
+.segc button[aria-pressed=true]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+.badge{font-size:13px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;flex:none}
+.b-ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
+.b-warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.b-bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.b-n{color:var(--sub);background:var(--fill)}
+/* home */
+.mrow{display:flex;align-items:center;justify-content:space-between;margin:-8px -8px 4px}
+.mrow b{font-size:15px;font-weight:600}
+.mrow .ib{color:var(--sub)}
+.lbl{display:block;font-size:13px;color:var(--sub)}
+.amt{font-size:clamp(32px,10vw,40px);font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em}
+.prog{height:6px;border-radius:99px;background:var(--fill);overflow:hidden;margin:12px 0 6px}.prog i{display:block;height:100%;background:var(--ac);border-radius:99px}.prog.over i{background:var(--bad)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:14px;padding-top:12px;border-top:1px solid var(--sep)}
+.kpis div{display:grid;gap:1px}.kpis div+div{padding-left:12px;border-left:1px solid var(--sep)}
+.kpis b{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.acts{display:grid;grid-template-columns:minmax(0,1fr) 7em;gap:8px;margin-top:12px}
+.donut{display:grid;grid-template-columns:112px minmax(0,1fr);gap:16px;align-items:center}
+.donut svg{width:112px;height:112px;display:block}
+.leg{display:grid;gap:7px;font-size:14px}
+.leg div{display:grid;grid-template-columns:10px minmax(0,1fr) auto 5.2em;gap:8px;align-items:center}
+.leg i{width:10px;height:10px;border-radius:3px}.leg b{font-weight:600;text-align:right}
+@media(max-width:350px){.donut{grid-template-columns:1fr}.donut svg{margin:0 auto}}
+/* fridge */
+.sum3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+.sum3 div{padding:12px 6px;text-align:center}.sum3 div+div{border-left:1px solid var(--sep)}
+.sum3 b{display:block;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}.sum3 span{font-size:12px;color:var(--sub)}
+.emptyc{text-align:center;color:var(--sub);padding:40px 16px 12px;line-height:1.6}.emptyc b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+/* plan */
+.meal-s{width:2.4em;font-size:13px;font-weight:600;color:var(--sub);flex:none}
+.step{display:flex;align-items:center;gap:6px;margin-left:auto}.step button{width:40px;height:40px;border-radius:10px;border:0;background:var(--fill);font-size:20px;color:var(--ink);padding:0}
+.step b{min-width:2.6em;text-align:center;font-weight:600}
+.fr .segc{flex:1}
+.done .t1{text-decoration:line-through;color:var(--sub)}
+.adv{padding:14px 16px;white-space:pre-wrap;font-size:15px;line-height:1.7}
+.loading{display:grid;place-items:center;gap:12px;padding:40px 0;text-align:center}
+.spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--fill);border-top-color:var(--sub);animation:sp .9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* calendar */
+.calh{display:flex;align-items:center;justify-content:space-between;margin:-8px -8px 4px}.calh b{font-size:17px;font-weight:600}.calh .ib{color:var(--sub)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:2px}
+.wd{text-align:center;font-size:12px;color:var(--sub);padding-bottom:4px}.wd:first-child{color:var(--sun)}.wd:nth-child(7){color:var(--sat)}
+.dc{border:0;background:none;color:inherit;min-height:60px;display:flex;flex-direction:column;align-items:center;padding:2px 0;font:inherit}
+.dc.out{visibility:hidden}
+.dc .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:16px}
+.dc.sun .n{color:var(--sun)}.dc.sat .n{color:var(--sat)}
+.dc.today .n{color:var(--ac);font-weight:700}
+.dc.sel .n{background:var(--ink);color:var(--card)}.dc.sel.today .n{background:var(--ac);color:#fff}
+.dc .a{font-size:12px;color:var(--sub);line-height:1.25;font-variant-numeric:tabular-nums;min-height:15px;white-space:nowrap}
+.dc .d{display:flex;gap:3px;height:6px;margin-top:1px}.dc .d i,.legend i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.g{background:var(--ok)}.y{background:var(--warn)}.p{background:var(--sub)}
+.legend{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:10px}.legend span{display:inline-flex;align-items:center;gap:5px}
+table.learn{width:100%;border-collapse:collapse;font-size:14px}
+.learn th,.learn td{padding:11px 16px 11px 0;border-bottom:1px solid var(--sep);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.learn th:first-child,.learn td:first-child{text-align:left;white-space:normal;padding-left:16px}
+.learn tr:last-child td{border-bottom:0}
+.learn th{font-size:12px;color:var(--sub);font-weight:400}
+/* chat */
+.msgs{display:flex;flex-direction:column;gap:6px;padding:4px 0 190px}
+.msg{max-width:80%;padding:8px 13px;border-radius:18px;white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere;font-size:16px}
+.msg.user{align-self:flex-end;background:var(--ac);color:#fff}
+.msg.assistant{align-self:flex-start;background:var(--card)}
+.msg img{max-width:180px;border-radius:12px;display:block;margin:2px 0 6px}
+.composer{position:fixed;z-index:6;left:50%;transform:translateX(-50%);width:min(600px,100%);bottom:calc(57px + env(safe-area-inset-bottom));padding:8px 12px;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--sep);display:grid;gap:8px}
+.hs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}.hs::-webkit-scrollbar{display:none}
+.hs button{flex:none;min-height:34px;border-radius:99px;border:1px solid var(--sep);background:var(--card);padding:0 12px;font-size:14px;white-space:nowrap;color:var(--ink)}
+.hs .tm{color:var(--ok)}
+.cf{display:flex;align-items:flex-end;gap:6px}
+.cf textarea{flex:1;min-height:40px;max-height:120px;border:1px solid var(--sep);border-radius:20px;background:var(--card);padding:8px 14px;resize:none;line-height:1.45;font-size:16px}
+.cf .ib{width:40px;height:40px}
+.sendb{width:40px;height:40px;border-radius:50%;border:0;background:var(--ac);color:#fff;display:grid;place-items:center;flex:none;padding:0}
+.sendb:disabled{opacity:.35}
+.attach{font-size:13px;color:var(--sub);display:flex;justify-content:space-between;align-items:center}
+/* nav, sheet, toast */
+nav.tabs{position:fixed;z-index:7;bottom:0;left:50%;transform:translateX(-50%);width:min(600px,100%);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--sep);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{border:0;background:none;height:56px;display:grid;place-items:center;align-content:center;gap:1px;font-size:11px;color:var(--sub);padding:0}
+nav.tabs button[aria-current=page]{color:var(--ac)}
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet[hidden]{display:none}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.4);border:0;padding:0}
+.sheet-body{position:relative;width:min(600px,100%);max-height:94dvh;overflow:auto;background:var(--bg);border-radius:14px 14px 0 0;padding:0 16px calc(28px + env(safe-area-inset-bottom));animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+@media (prefers-reduced-motion:reduce){.sheet-body{animation:none}.spin{animation-duration:3s}}
+.grab{width:36px;height:5px;border-radius:9px;background:var(--sep);margin:6px auto 0}
+.sh-h{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:52px;background:var(--bg);margin:0 -16px 4px;padding:0 10px}
+.sh-h b{font-size:17px;font-weight:600;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
+.sh-h>:first-child{justify-self:start}.sh-h>:last-child{justify-self:end}
+.preview{max-height:140px;max-width:100%;border-radius:10px;display:block;margin:4px auto 0}
+.it{position:relative;padding:10px 16px}
+.it1{display:flex;gap:8px;align-items:center}
+.it1 input{border:0;background:none;min-height:38px;padding:0;font-size:16px;outline:none}
+.it1 .nm{flex:1;min-width:0}.it1 .pr{width:5.5em;text-align:right;font-variant-numeric:tabular-nums}
+.it2{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.it2 input,.it2 select{border:0;background:var(--fill);border-radius:8px;min-height:36px;padding:0 8px;font-size:16px;outline:none}
+.it2 .q{width:3.2em}.it2 .u{width:4.4em}.it2 select{max-width:8.5em}
+.it2 label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--sub);min-height:36px}
+.it2 .del{margin-left:auto;border:0;background:none;color:var(--bad);font-size:14px;min-height:36px;padding:0 2px}
+.toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--ink) 88%,transparent);color:var(--card);padding:10px 16px;border-radius:12px;max-width:90vw;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="tb">
+    <h1 id="ttl">家計</h1>
+    <span class="sync" id="sync"></span>
+    <button class="tchip" id="hTimer" data-act="tStop" hidden aria-label="タイマーを止める"></button>
+    <span id="hx" style="display:contents"></span>
+    <button class="ib" data-act="settings" aria-label="設定"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div></header>
+  <main id="main"></main>
+</div>
+<nav class="tabs" aria-label="メニュー">
+  <button data-act="go" data-v="home"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3"/></svg>家計</button>
+  <button data-act="go" data-v="fridge"><svg class="i" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M6 10h12M9 5.5v2M9 13v3"/></svg>冷蔵庫</button>
+  <button data-act="go" data-v="plan"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h18a9 9 0 0 1-18 0zM9 8c0-2 2-2 2-4M14 8c0-2 2-2 2-4"/></svg>献立</button>
+  <button data-act="go" data-v="cal"><svg class="i" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>カレンダー</button>
+  <button data-act="go" data-v="chat"><svg class="i" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z"/></svg>アシスタント</button>
+</nav>
+<div class="sheet" id="sheet" hidden><button class="sheet-bg" data-act="closeSheet" aria-label="閉じる"></button><div class="sheet-body" role="dialog" aria-modal="true" id="sheetIn"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen=n=>'¥'+Math.round(+n||0).toLocaleString('ja-JP');
+const cl=o=>JSON.parse(JSON.stringify(o??null));
+const pad=n=>String(n).padStart(2,'0');
+const ds=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const pd=s=>{const p=String(s||'').split('-').map(Number);return p.length===3&&p.every(x=>x>0)?new Date(p[0],p[1]-1,p[2]):new Date()};
+const today=()=>ds(new Date());
+const addD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return ds(d)};
+const diffD=(a,b)=>Math.round((pd(b)-pd(a))/864e5);
+const WD='日月火水木金土';
+const md=s=>{const d=pd(s);return (d.getMonth()+1)+'/'+d.getDate()+'('+WD[d.getDay()]+')'};
+const uid36=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const median=a=>{if(!a.length)return 0;const b=[...a].sort((x,y)=>x-y),m=b.length>>1;return b.length%2?b[m]:(b[m-1]+b[m])/2};
+const r1=n=>Math.round(n*10)/10;
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+const isDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''));
+const norm=n=>{const s=String(n||'');return s.replace(/[\s　]/g,'').replace(/[（(【\[].*?[)）】\]]/g,'').replace(/[0-9０-９.]+(g|ｇ|kg|ml|ｍｌ|l|L|個|本|枚|玉|袋|パック|P|入)?$/,'')||s};
+const fmtQ=(q,u)=>u?`${+q||1}${u}`:`×${+q||1}`;
+const CATS=['野菜','果物','肉','魚','卵・乳製品','豆腐・大豆','主食','調味料','冷凍食品','惣菜','飲料','菓子','日用品','その他'];
+const SHELF={'野菜':5,'果物':5,'肉':3,'魚':2,'卵・乳製品':10,'豆腐・大豆':5,'主食':30,'調味料':120,'冷凍食品':60,'惣菜':2,'飲料':30,'菓子':60,'日用品':365,'その他':14};
+const ZONES={fridge:'冷蔵室',veg:'野菜室',freezer:'冷凍室',pantry:'ストック棚'};
+const zoneOf=(cat,sto)=>sto==='冷凍'||cat==='冷凍食品'?'freezer':(sto==='常温'||(['主食','調味料','飲料','菓子','日用品'].includes(cat)&&sto!=='冷蔵'))?'pantry':(cat==='野菜'||cat==='果物')?'veg':'fridge';
+const MODES={
+ zubora:{n:'ずぼら',s:'10分・洗い物少なめ',d:'1品10〜15分、レンジやワンパン中心、洗い物少なめ、カット野菜や市販の素もOK、同じ食材を使い回す'},
+ balance:{n:'バランス',s:'20〜30分・一汁二菜',d:'1食20〜30分、主食・主菜・副菜(+汁物)をそろえ、たんぱく質と野菜(1日350g目安)をしっかり、作り置きも活用'},
+ kodawari:{n:'こだわる',s:'時間をかけて丁寧に',d:'時間をかけてOK、旬の食材、出汁や下ごしらえから丁寧に、味付けや食感の変化、盛り付けまで楽しむ'}};
+const MODE_IC={
+ zubora:'<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 20h24a12 12 0 0 1-24 0z" fill="var(--butter-s)"/><path d="M15 14c0-3 3-3 3-6"/></svg>',
+ balance:'<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="20" cy="22" r="13" fill="var(--leaf-s)"/><path d="M20 9v26M7 22h26"/></svg>',
+ kodawari:'<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 24h28l-3 8H9z" fill="var(--tomato-s)"/><path d="M14 18c0-4 4-4 4-8M22 18c0-4 4-4 4-8M30 12l4-4"/></svg>'};
+const IC={cam:'<svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+ send:'<svg class="i" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5z"/></svg>'};
+
+/* ---------- state & storage ---------- */
+const VIEWS=['home','fridge','plan','cal','chat'];
+const S={docs:{},view:VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):'home',month:today().slice(0,7),calMonth:today().slice(0,7),open:new Set(),confirm:null,
+ chat:[],draft:'',chatImg:null,chatBusy:false,planBusy:false,po:null,selDate:null,timerEnd:0,checks:{},remote:false,synced:false};
+try{S.checks=JSON.parse(localStorage.getItem('food-checks')||'{}')||{}}catch(e){}
+let col=null,sample=null,imgOK=false,aiReady=false,R=null,F=null,T=null;
+const chains={};
+const get=k=>S.docs[k];
+const settings=()=>({budget:40000,people:1,days:[],mode:'balance',model:'',...(get('settings')||{})});
+const fridge=()=>(get('fridge')&&get('fridge').items)||[];
+const history=()=>(get('history')&&get('history').events)||[];
+const receipts=()=>Object.keys(S.docs).filter(k=>k.startsWith('r_')).map(k=>({...S.docs[k],id:k})).sort((a,b)=>(String(b.date)+(b.time||'')).localeCompare(String(a.date)+(a.time||'')));
+const LS='food-app-v1';
+const saveLocal=()=>{try{localStorage.setItem(LS,JSON.stringify(S.docs))}catch(e){}};
+const loadLocal=()=>{try{S.docs=JSON.parse(localStorage.getItem(LS)||'{}')||{}}catch(e){S.docs={}}};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+function dbErr(e){console.warn(e);const c=e&&e.code;toast(c==='quota_exceeded'?'保存容量がいっぱいです。古いレシートを削除してください':c==='revoked'?'保存先に接続できなくなりました':'保存に失敗しました。もう一度お試しください')}
+function queue(k,fn){const p=(chains[k]||Promise.resolve()).then(fn).catch(dbErr);chains[k]=p;return p}
+async function retry(fn){try{return await fn()}catch(e){if(e&&e.code==='unavailable'){await wait(600+Math.random()*900);return fn()}throw e}}
+function put(k,v){S.docs[k]=v;render();if(col)return queue(k,()=>retry(()=>col.doc(k).set(v)));saveLocal();return Promise.resolve()}
+function del(k){delete S.docs[k];render();if(col)return queue(k,()=>retry(()=>col.doc(k).delete()));saveLocal();return Promise.resolve()}
+const setFridge=items=>put('fridge',{items});
+function logEnd(f,waste){const ev=[...cl(history()),{n:norm(f.name),name:f.name,cat:f.cat,qty:+f.qty||1,unit:f.unit||'',bought:f.added||today(),end:today(),waste:!!waste}].slice(-400);return put('history',{events:ev})}
+
+/* ---------- learning ---------- */
+function stats(){
+ const st={};const g=n=>st[n]||(st[n]={n,name:'',cat:'',unit:'',buys:[],qtys:[],prices:[],durs:[],waste:0,ends:0});
+ for(const r of receipts())for(const it of r.items||[]){if(!it.name)continue;const s=g(norm(it.name));s.name=s.name||it.name;s.cat=it.category||s.cat;s.unit=it.unit||s.unit;if(isDate(r.date))s.buys.push(r.date);s.qtys.push(+it.qty||1);s.prices.push(+it.price||0)}
+ for(const e of history()){const s=g(e.n||norm(e.name));s.name=s.name||e.name;s.cat=s.cat||e.cat;s.ends++;if(e.waste)s.waste++;else if(isDate(e.bought)&&isDate(e.end))s.durs.push(Math.max(1,diffD(e.bought,e.end)))}
+ for(const s of Object.values(st)){const b=[...new Set(s.buys)].sort();s.buyDates=b;s.last=b[b.length-1]||null;const gaps=b.slice(1).map((d,i)=>diffD(b[i],d)).filter(x=>x>0);s.interval=gaps.length?avg(gaps.slice(-5)):null;s.dur=s.durs.length?avg(s.durs.slice(-5)):null;s.q=median(s.qtys)||1;s.price=median(s.prices);s.wasteRate=s.ends?s.waste/s.ends:0}
+ return st}
+function trips(){
+ const set=settings(),t=today();const rs=[...new Set(receipts().map(r=>r.date).filter(isDate))].sort();
+ const gaps=rs.slice(1).map((d,i)=>diffD(rs[i],d)).filter(x=>x>0);const iv=clamp(Math.round(avg(gaps.slice(-6)))||4,2,14);
+ let dates=[];const start=rs.includes(t)?addD(t,1):t;
+ if(set.days&&set.days.length){for(let i=0;i<28&&dates.length<3;i++){const x=addD(start,i);if(set.days.includes(pd(x).getDay()))dates.push(x)}}
+ else{const last=rs[rs.length-1];let first=last?addD(last,iv):start;if(first<start)first=start;dates=[first,addD(first,iv),addD(first,iv*2)]}
+ return {iv,dates,learned:gaps.length>0}}
+function suggest(){
+ const st=stats(),{iv,dates,learned}=trips(),t=today();const out=dates.map(d=>({date:d,items:[]}));const seen=new Set();
+ const qtyFor=s=>{let q=s.q;if(s.wasteRate>=.3)q=Math.max(1,Math.round(q*.7));return q};
+ const whyFor=(s,need)=>[s.dur?`平均${r1(s.dur)}日で使い切り`:'',s.interval?`約${Math.round(s.interval)}日ごとに購入`:'',s.wasteRate>=.3?'捨てがちなので少なめ':'',`${md(need)}頃なくなる見込み`].filter(Boolean).join('・');
+ const place=it=>{for(let k=0;k<out.length;k++){const next=dates[k+1]||addD(dates[k],iv);if(it.need<next){out[k].items.push(it);return}}};
+ for(const f of fridge()){const n=norm(f.name),s=st[n];if(!s||seen.has(n))continue;const repeat=s.buyDates.length>=2;if(!repeat&&(+f.left||0)>.25)continue;
+  let need=isDate(f.exp)?f.exp:addD(t,7);if(s.dur&&isDate(f.added)){const e=addD(f.added,Math.round(s.dur));if(e<need)need=e}if((+f.left||0)<=.25){const e=addD(t,1);if(e<need)need=e}
+  seen.add(n);place({n,name:f.name,need,qty:qtyFor(s),unit:s.unit||f.unit||'',price:s.price,why:whyFor(s,need)})}
+ const inFr=new Set(fridge().map(f=>norm(f.name)));
+ for(const s of Object.values(st)){if(seen.has(s.n)||inFr.has(s.n)||s.buyDates.length<2||!s.interval||!s.last)continue;const need=addD(s.last,Math.round(s.interval));if(diffD(need,t)>s.interval*2)continue;seen.add(s.n);place({n:s.n,name:s.name,need,qty:qtyFor(s),unit:s.unit,price:s.price,why:whyFor(s,need)})}
+ const pl=get('plan');if(pl&&out[0])for(const x of pl.shopping||[]){const n=norm(x.name);if(x.done||seen.has(n))continue;seen.add(n);out[0].items.push({n,name:x.name,qty:x.qty,unit:x.unit||'',plan:true,why:'献立用'+(x.why?'：'+x.why:'')})}
+ return {iv,dates,learned,trips:out}}
+
+/* ---------- AI ---------- */
+function parseJSON(t){const s=String(t||'');const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw new Error('JSONが見つかりません');return JSON.parse(s.slice(a,b+1))}
+function aiErr(e){console.warn(e);const c=e&&e.code;if(c==='not_granted'){sample=null;toast('AIの利用が許可されていません');render()}else if(c==='rate_limited')toast('AIの利用上限に達したか、混み合っています。少し待ってからもう一度どうぞ');else if(c==='bad_key')toast('Gemini APIキーを確認してください');else if(c==='bad_model')toast('モデルが見つかりません。設定でモデルを選び直してください');else if(c==='none')toast('AIが設定されていません。設定でGemini APIキーを登録してください');else if(c==='network')toast('通信できませんでした。電波の状態を確認してください');else toast('AIの応答をうまく受け取れませんでした。もう一度お試しください')}
+const MODELS=[['','自動'],['claude-haiku-5-5','Haiku 5.5'],['claude-sonnet-5-5','Sonnet 5.5'],['claude-opus-5-5','Opus 5.5']];
+let warned=false;
+const aiOpts=x=>{const m=settings().model;return {modelTier:'default',cache:false,...(m?{model:m}:{}),...(x||{})}};
+const inClaude=!!(window.claude&&window.claude.use);
+const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
+const lsSet=(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}};
+const GK='food-gemini-key',GM='food-gemini-model',GL='food-gemini-models',GEM_DEFAULT='gemini-3.5-flash';
+const gemKey=()=>lsGet(GK),gemModel=()=>lsGet(GM)||GEM_DEFAULT;
+const gemList=()=>{try{return JSON.parse(lsGet(GL)||'[]')||[]}catch(e){return []}};
+const aiOn=()=>!!sample||(!inClaude&&!!gemKey());
+const canImg=()=>sample?imgOK:!!gemKey();
+const b64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(b)});
+const GAPI='https://generativelanguage.googleapis.com/v1beta/';
+async function gemFail(res){let msg='';try{const j=await res.json();msg=(j.error&&j.error.message)||''}catch(e){}
+ const code=res.status===429?'rate_limited':(res.status===401||res.status===403||/api key/i.test(msg))?'bad_key':res.status===404?'bad_model':'http';return {code,status:res.status,message:msg}}
+async function gemini(input,x={},key=gemKey(),model=gemModel()){
+ const msgs=typeof input==='string'?[{role:'user',content:input}]:input;
+ const contents=msgs.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:String(m.content||'')}]}));
+ if(x.images&&x.images.length){const last=contents[contents.length-1];for(const im of x.images)last.parts.push({inline_data:{mime_type:im.type||'image/jpeg',data:await b64(im)}})}
+ const body={contents};if(x.json)body.generationConfig={responseMimeType:'application/json'};
+ const pick=j=>(((j.candidates||[])[0]||{}).content||{parts:[]}).parts.filter(p=>p&&!p.thought&&p.text).map(p=>p.text).join('');
+ let res;try{res=await fetch(GAPI+'models/'+encodeURIComponent(model)+(x.onText?':streamGenerateContent?alt=sse':':generateContent'),{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body),signal:x.signal})}
+ catch(e){throw {code:'network',message:String(e)}}
+ if(!res.ok)throw await gemFail(res);
+ if(!x.onText||!res.body){const j=await res.json();const t=pick(j);if(x.onText&&t)x.onText({text:t,delta:t});return {text:t}}
+ const rd=res.body.getReader(),dec=new TextDecoder();let buf='',text='';
+ const eat=line=>{line=line.trim();if(!line.startsWith('data:'))return;const d=line.slice(5).trim();if(!d||d==='[DONE]')return;try{const t=pick(JSON.parse(d));if(t){text+=t;x.onText({text,delta:t})}}catch(e){}};
+ for(;;){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;while((i=buf.indexOf('\n'))>=0){eat(buf.slice(0,i));buf=buf.slice(i+1)}}
+ eat(buf);return {text}}
+async function gemModels(key){let res;try{res=await fetch(GAPI+'models?pageSize=1000',{headers:{'x-goog-api-key':key}})}catch(e){throw {code:'network'}}
+ if(!res.ok)throw await gemFail(res);const j=await res.json();
+ const bad=/(image|tts|live|audio|embed|robotics|transcribe|translate|omni|computer|aqa|learnlm|gemma)/;
+ const ver=n=>{const m=n.match(/gemini-(\d+)(?:\.(\d+))?/);return m?(+m[1])*100+(+(m[2]||0)):0};
+ return (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>String(m.name||'').replace(/^models\//,'')).filter(n=>/^gemini-\d/.test(n)&&!bad.test(n))
+  .sort((a,b)=>ver(b)-ver(a)||(/preview|exp/.test(a)?1:0)-(/preview|exp/.test(b)?1:0)||a.length-b.length)}
+const bestModel=l=>l.find(n=>/^gemini-[\d.]+-flash$/.test(n))||l.find(n=>/flash/.test(n)&&!/lite/.test(n))||l[0]||GEM_DEFAULT;
+async function ai(input,x){x=x||{};
+ if(sample){const {json,...rest}=x;const r=await sample(input,aiOpts(rest));const m=settings().model,ap=r&&r.modelApplied;
+  if(m&&!warned&&(ap===false||(typeof ap==='string'&&ap!==m))){warned=true;toast('選んだモデルが使えないため、自動で選ばれたモデルで答えています')}return r}
+ if(!inClaude&&gemKey())return gemini(input,x);
+ throw {code:'none'}}
+async function shrink(file,max=2000){const bmp=await createImageBitmap(file);const s=Math.min(1,max/Math.max(bmp.width,bmp.height));const c=document.createElement('canvas');c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('blob')),'image/jpeg',.85))}
+const fridgeSummary=()=>fridge().slice().sort((a,b)=>String(a.exp).localeCompare(String(b.exp))).slice(0,40).map(f=>`${f.name}${fmtQ(f.qty,f.unit)}${(+f.left||0)<1?((+f.left||0)>=.5?'(残り半分)':'(残り少し)'):''}(期限まであと${diffD(today(),f.exp)}日)`).join('、');
+const aiNote=()=>!aiReady||aiOn()?'':inClaude?`<p class="note">レシート読み取り・献立・アシスタントは、AIの利用を許可すると使えます。</p>`:`<p class="note">レシート読み取り・献立・アシスタントを使うには、設定で Gemini APIキーを登録してください。<button class="link" style="font-size:13px;min-height:0;padding:0" data-act="settings">設定を開く</button></p>`;
+
+
+/* ---------- views ---------- */
+const IC2={plus:'<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+ up:'<svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;stroke-width:2.4"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+ L:'<svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',R:'<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'};
+const CATCOL={'野菜':'#34c759','果物':'#ff9f0a','肉':'#ff453a','魚':'#0a84ff','卵・乳製品':'#e6b800','豆腐・大豆':'#bf9b6f','主食':'#a2845e','調味料':'#5e5ce6','冷凍食品':'#64d2ff','惣菜':'#ff6a43','飲料':'#30b0c7','菓子':'#ff375f','日用品':'#8e8e93','その他':'#aeaeb2'};
+const TITLES={home:'家計',fridge:'冷蔵庫',plan:'献立',cal:'カレンダー',chat:'アシスタント'};
+const shortYen=a=>a>=10000?r1(a/10000)+'万':Math.round(a).toLocaleString('ja-JP');
+function donut(cs,total){const C=2*Math.PI*46;let list=cs.slice(0,5).map(x=>[...x]);const rest=cs.slice(5).reduce((a,c)=>a+c[1],0);
+ if(rest){const o=list.find(x=>x[0]==='その他');o?o[1]+=rest:list.push(['その他',rest])}
+ let off=0;const segs=list.map(([c,v])=>{const len=total?v/total*C:0;const s=`<circle r="46" cx="56" cy="56" fill="none" stroke="${CATCOL[c]||'#aeaeb2'}" stroke-width="16" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 56 56)"/>`;off+=len;return s}).join('');
+ return `<div class="donut"><svg viewBox="0 0 112 112" role="img" aria-label="カテゴリ別の割合"><circle r="46" cx="56" cy="56" fill="none" stroke="var(--fill)" stroke-width="16"/>${segs}</svg>
+ <div class="leg">${list.map(([c,v])=>`<div><i style="background:${CATCOL[c]||'#aeaeb2'}"></i><span>${esc(c)}</span><span class="sub num">${total?Math.round(v/total*100):0}%</span><b class="num">${yen(v)}</b></div>`).join('')}</div></div>`}
+const V={};
+V.home=()=>{
+ const set=settings(),m=S.month,[y,mo]=m.split('-').map(Number);
+ const rs=receipts().filter(r=>String(r.date||'').startsWith(m));const total=rs.reduce((a,r)=>a+(+r.total||0),0);
+ const dim=new Date(y,mo,0).getDate(),cur=m===today().slice(0,7),past=cur?new Date().getDate():dim,per=total/Math.max(1,past);
+ const bud=+set.budget||0,over=bud&&total>bud,pct=bud?Math.min(100,total/bud*100):0;
+ const ct={};rs.forEach(r=>(r.items||[]).forEach(i=>{const c=i.category||'その他';ct[c]=(ct[c]||0)+(+i.price||0)}));
+ const cs=Object.entries(ct).filter(c=>c[1]>0).sort((a,b)=>b[1]-a[1]),ctot=cs.reduce((a,c)=>a+c[1],0);
+ const byDate={};rs.forEach(r=>(byDate[r.date]=byDate[r.date]||[]).push(r));
+ return `<section class="group pad">
+  <div class="mrow"><button class="ib" data-act="mPrev" aria-label="前の月">${IC2.L}</button><b>${y}年${mo}月</b><button class="ib" data-act="mNext" aria-label="次の月">${IC2.R}</button></div>
+  <span class="lbl">食費の合計</span><div class="amt">${yen(total)}</div>
+  ${bud?`<div class="prog${over?' over':''}"><i style="width:${pct}%"></i></div><div class="row between small"><span class="sub">予算 ${yen(bud)}</span><span class="${over?'danger':'sub'}">${over?yen(total-bud)+' オーバー':'残り '+yen(bud-total)}</span></div>`:''}
+  <div class="kpis"><div><span class="lbl">1日平均</span><b>${yen(per)}</b></div><div><span class="lbl">月末見込み</span><b>${cur&&total?yen(per*dim):'—'}</b></div><div><span class="lbl">買い物</span><b>${rs.length}回</b></div></div>
+ </section>
+ <div class="acts"><label class="btn filebtn">${IC.cam}レシートを読み取る<input type="file" accept="image/*" class="scanIn" aria-label="レシートの写真を選ぶ"></label><button class="btn sec" data-act="manual">手入力</button></div>
+ ${aiNote()}
+ ${cs.length?`<h2 class="gh">カテゴリ別</h2><section class="group pad">${donut(cs,ctot)}</section>`:''}
+ ${Object.keys(byDate).length?Object.entries(byDate).map(([d,list])=>`<h2 class="gh"><span>${esc(md(d))}</span><span class="num">${yen(list.reduce((a,r)=>a+(+r.total||0),0))}</span></h2><section class="group">${list.map(r=>`<button class="r" data-act="openR" data-v="${esc(r.id)}"><span class="m"><span class="t1">${esc(r.store||'お店')}</span><span class="t2">${(r.items||[]).slice(0,5).map(i=>esc(i.name)).join('、')}</span></span><span class="v b">${yen(r.total)}</span><i class="chev"></i></button>`).join('')}</section>`).join('')
+  :`<p class="note">この月の記録はまだありません。</p>`}
+ ${S.remote?'':'<p class="note">データはこの端末の中に保存されています。設定の「バックアップを書き出す」でときどき保存しておくと安心です。</p>'}`};
+V.fridge=()=>{
+ const fr=fridge(),t=today(),fz=S.fz||'all';
+ const bd=f=>{const d=diffD(t,f.exp);return d<0?['bad','期限切れ']:d===0?['bad','今日まで']:d===1?['bad','明日まで']:d<=3?['warn',`あと${d}日`]:['ok',`あと${d}日`]};
+ const nb=fr.filter(f=>diffD(t,f.exp)<=1).length,nw=fr.filter(f=>{const d=diffD(t,f.exp);return d>1&&d<=3}).length,no=fr.length-nb-nw;
+ const nt=suggest().trips[0];
+ const lab=f=>{const l=+f.left||0;return l>=.99?'たっぷり':l>=.5?'残り半分':'残り少し'};
+ const row=f=>{const [c,l]=bd(f);return `<button class="r" data-act="editF" data-v="${esc(f.id)}"><span class="m"><span class="t1">${esc(f.name)}</span><span class="t2">${esc(fmtQ(f.qty,f.unit))} ・ ${lab(f)} ・ ${esc(md(f.added))}購入</span></span><span class="badge b-${c}">${l}</span><i class="chev"></i></button>`};
+ const zones=Object.keys(ZONES).filter(k=>fz==='all'||fz===k);
+ const body=zones.map(k=>{const it=fr.filter(f=>(ZONES[f.zone]?f.zone:'fridge')===k).sort((a,b)=>String(a.exp).localeCompare(String(b.exp)));
+  if(!it.length)return fz==='all'?'':`<p class="note">${ZONES[k]}には何も入っていません。</p>`;
+  return `<h2 class="gh"><span>${ZONES[k]}</span><span>${it.length}品</span></h2><section class="group">${it.map(row).join('')}</section>`}).join('');
+ const segs=[['all','すべて'],['fridge','冷蔵'],['veg','野菜'],['freezer','冷凍'],['pantry','常温']];
+ if(!fr.length)return `<div class="emptyc"><b>冷蔵庫は空です</b>レシートを読み取ると、買った食材が自動で追加されます。</div><label class="btn filebtn">${IC.cam}レシートを読み取る<input type="file" accept="image/*" class="scanIn"></label><div style="margin-top:8px"><button class="btn sec" data-act="newF">手で追加</button></div>`;
+ return `<section class="group sum3"><div><b class="danger">${nb}</b><span>明日まで・期限切れ</span></div><div><b class="warn-c">${nw}</b><span>3日以内</span></div><div><b class="ok-c">${no}</b><span>余裕あり</span></div></section>
+ ${nt?`<section class="group" style="margin-top:12px"><button class="r" data-act="go" data-v="cal"><span class="m"><span class="t1">次の買い物　${esc(md(nt.date))}</span><span class="t2">${nt.items.length?nt.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しが必要なものはありません'}</span></span><span class="v">${nt.items.length}品</span><i class="chev"></i></button></section>`:''}
+ <div class="segc" style="margin-top:16px">${segs.map(([k,n])=>`<button data-act="fz" data-v="${k}" aria-pressed="${fz===k}">${n}</button>`).join('')}</div>
+ ${body}
+ <p class="foot" style="margin-top:12px">食材をタップすると、残りの量の変更や「使い切った」の記録ができます。</p>`};
+V.plan=()=>{
+ const set=settings();if(!S.po)S.po={mode:set.mode||'balance',days:5,meals:'3食',people:+set.people||1};const o=S.po,pl=get('plan');
+ const seg=(k,vals)=>`<div class="segc">${vals.map(([v,n])=>`<button data-act="po" data-k="${k}" data-v="${v}" aria-pressed="${String(o[k])===String(v)}">${n}</button>`).join('')}</div>`;
+ return `<h2 class="gh">自炊のレベル</h2><section class="group pad">${seg('mode',Object.entries(MODES).map(([k,m])=>[k,m.n]))}<p class="small sub" style="margin:10px 2px 0">${esc(MODES[o.mode].d)}</p></section>
+ <h2 class="gh">条件</h2><section class="group">
+  <div class="fr"><span>期間</span>${seg('days',[[3,'3日'],[5,'5日'],[7,'7日']])}</div>
+  <div class="fr"><span>食事</span>${seg('meals',[['夜','夕食'],['昼夜','昼・夕'],['3食','3食']])}</div>
+  <div class="fr"><span>人数</span><div class="step"><button data-act="pp" data-v="-1" aria-label="減らす">−</button><b>${o.people}人</b><button data-act="pp" data-v="1" aria-label="増やす">＋</button></div></div>
+ </section>
+ <div style="margin-top:16px"><button class="btn" data-act="genPlan" ${S.planBusy||!aiOn()?'disabled':''}>${S.planBusy?'作成中…':'献立を作成'}</button></div>
+ <p class="foot">冷蔵庫の食材（期限の近い順）と今月の残り予算をもとに作成します。</p>
+ ${aiNote()}
+ ${S.planBusy?'<div class="loading"><div class="spin"></div><span class="sub small">献立を作成しています</span></div>':''}
+ ${pl&&!S.planBusy?planHTML(pl):''}`};
+function planHTML(pl){const sh=pl.shopping||[];
+ return `<h2 class="gh"><span>${esc(md(pl.created))}からの献立</span><span>${esc((MODES[pl.mode]||{}).n||'')}・${esc(pl.people)}人</span></h2>
+ ${pl.summary||pl.nutrition?`<section class="group"><div class="adv">${esc([pl.summary,pl.nutrition].filter(Boolean).join('\n'))}</div></section>`:''}
+ ${(pl.days||[]).map(d=>`<h2 class="gh"><span>${esc(md(d.date))}${d.date===today()?'　今日':''}</span></h2><section class="group">${(d.meals||[]).map(m=>`<button class="r wrap" data-act="cook" data-v="${esc(m.name)}"><span class="meal-s">${esc(m.slot==='朝'?'朝食':m.slot==='昼'?'昼食':m.slot==='夜'?'夕食':m.slot)}</span><span class="m"><span class="t1">${esc(m.name)}</span><span class="t2">${esc([m.minutes?m.minutes+'分':'',(m.uses||[]).length?(m.uses||[]).join('、'):'',m.tip].filter(Boolean).join(' ・ '))}</span></span><i class="chev"></i></button>`).join('')}</section>`).join('')}
+ <p class="foot">料理をタップすると、アシスタントに作り方を聞けます。</p>
+ <h2 class="gh"><span>買い物リスト</span><span>残り${sh.filter(x=>!x.done).length}品</span></h2>
+ <section class="group">${sh.map((x,i)=>`<label class="r wrap${x.done?' done':''}"><input type="checkbox" data-act="pBuy" data-v="${i}" ${x.done?'checked':''}><span class="m"><span class="t1">${esc(x.name)}</span>${x.why?`<span class="t2">${esc(x.why)}</span>`:''}</span><span class="v">${esc(fmtQ(x.qty,x.unit))}</span></label>`).join('')||'<div class="r"><span class="m sub">冷蔵庫のもので足りそうです</span></div>'}</section>
+ <p class="foot">チェックしていないものは、カレンダーの次の買い物日に入ります。</p>`}
+V.cal=()=>{
+ const sg=suggest(),[y,m]=S.calMonth.split('-').map(Number),first=new Date(y,m-1,1),start=first.getDay(),dim=new Date(y,m,0).getDate(),t=today();
+ const rsum={};receipts().forEach(r=>{if(isDate(r.date))rsum[r.date]=(rsum[r.date]||0)+(+r.total||0)});
+ const trip=new Set(sg.dates);const exp={};fridge().forEach(f=>{if(isDate(f.exp))(exp[f.exp]=exp[f.exp]||[]).push(f)});
+ const pl=get('plan'),meals={};((pl&&pl.days)||[]).forEach(d=>{meals[d.date]=d.meals||[]});
+ const sel=S.selDate||sg.dates[0]||t;
+ let cells='';for(let i=0;i<Math.ceil((start+dim)/7)*7;i++){const n=i-start+1;if(n<1||n>dim){cells+='<span class="dc out"></span>';continue}
+  const d=`${y}-${pad(m)}-${pad(n)}`,w=i%7,a=rsum[d];
+  const cls=['dc',w===0?'sun':w===6?'sat':'',d===t?'today':'',d===sel?'sel':''].join(' ');
+  cells+=`<button class="${cls}" data-act="selD" data-v="${d}" aria-label="${m}月${n}日"><span class="n">${n}</span><span class="a">${a?shortYen(a):''}</span><span class="d">${trip.has(d)?'<i class="g"></i>':''}${exp[d]?'<i class="y"></i>':''}${meals[d]?'<i class="p"></i>':''}</span></button>`}
+ const tr=sg.trips.find(x=>x.date===sel),rsD=receipts().filter(r=>r.date===sel);
+ const est=x=>x.items.reduce((a,i)=>a+(+i.price||0),0);
+ const rows=[];
+ if(tr)rows.push(...(tr.items.length?tr.items.map(it=>{const k=tr.date+'|'+it.name,ck=!!S.checks[k];return `<label class="r wrap${ck?' done':''}"><input type="checkbox" data-act="tchk" data-v="${esc(k)}" ${ck?'checked':''}><span class="m"><span class="t1">${esc(it.name)}</span><span class="t2">${esc(it.why)}</span></span><span class="v">${esc(fmtQ(it.qty,it.unit))}</span></label>`}):['<div class="r"><span class="m sub">買い足しが必要なものはまだありません</span></div>']));
+ rsD.forEach(r=>rows.push(`<button class="r" data-act="openR" data-v="${esc(r.id)}"><span class="m"><span class="t1">${esc(r.store||'お店')}</span><span class="t2">${esc(r.time||'')} の買い物</span></span><span class="v b">${yen(r.total)}</span><i class="chev"></i></button>`));
+ (meals[sel]||[]).forEach(x=>rows.push(`<div class="r"><span class="meal-s">${esc(x.slot==='朝'?'朝食':x.slot==='昼'?'昼食':x.slot==='夜'?'夕食':x.slot)}</span><span class="m"><span class="t1">${esc(x.name)}</span></span></div>`));
+ (exp[sel]||[]).forEach(f=>rows.push(`<div class="r"><span class="m"><span class="t1">${esc(f.name)}</span></span><span class="badge b-warn">期限</span></div>`));
+ const st=Object.values(stats()).filter(s=>s.buyDates.length).sort((a,b)=>b.buyDates.length-a.buyDates.length||(b.ends-a.ends)).slice(0,12);
+ return `<section class="group pad"><div class="calh"><button class="ib" data-act="cPrev" aria-label="前の月">${IC2.L}</button><b>${y}年${m}月</b><button class="ib" data-act="cNext" aria-label="次の月">${IC2.R}</button></div>
+ <div class="cal">${[...WD].map(w=>`<span class="wd">${w}</span>`).join('')}${cells}</div>
+ <div class="legend"><span><i class="g"></i>買い物予定</span><span><i class="y"></i>期限</span><span><i class="p"></i>献立</span><span>数字は使った金額</span></div></section>
+ <h2 class="gh"><span>${esc(md(sel))}${sel===t?'　今日':''}${tr?'　買い物予定':''}</span>${tr?`<span>目安 ${yen(est(tr))}</span>`:''}</h2>
+ <section class="group">${rows.join('')||'<div class="r"><span class="m sub">予定はありません</span></div>'}</section>
+ ${tr&&tr.items.length?`<div style="margin-top:12px"><button class="btn sec" data-act="copyTrip" data-v="${tr.date}">買い物リストをコピー</button></div>`:''}
+ <h2 class="gh">これからの買い物</h2>
+ <section class="group">${sg.trips.map(x=>`<button class="r" data-act="selD" data-v="${x.date}"><span class="m"><span class="t1">${esc(md(x.date))}</span><span class="t2">${x.items.length?x.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しなし'}</span></span><span class="v">${x.items.length}品${est(x)?' ・ '+yen(est(x)):''}</span><i class="chev"></i></button>`).join('')}</section>
+ <p class="foot">${sg.learned?`これまでの買い物の間隔：約${sg.iv}日。`:'レシートが2回分たまると、買い物の間隔を学習します。'}${settings().days.length?'設定した曜日に合わせています。':'設定で曜日を選ぶと、その曜日に合わせます。'}</p>
+ <h2 class="gh">学習データ</h2>
+ <section class="group">${st.length?`<table class="learn"><thead><tr><th>食材</th><th>使い切り</th><th>購入間隔</th><th>廃棄</th></tr></thead><tbody>${st.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.dur?r1(s.dur)+'日':'—'}</td><td>${s.interval?Math.round(s.interval)+'日':'—'}</td><td>${s.ends?Math.round(s.wasteRate*100)+'%':'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="r"><span class="m sub">記録が増えると表示されます</span></div>'}</section>
+ <p class="foot">冷蔵庫で「使い切った」「捨てた」を記録するほど、提案の精度が上がります。</p>`};
+V.chat=()=>{
+ const chips=['冷蔵庫のもので作れるものは？','次の手順は？','味が濃くなった','代わりの調味料は？','火が通ったか見分けるには？'];
+ return `<section class="msgs" id="msgs">${S.chat.length?S.chat.map(m=>`<div class="msg ${m.role}">${m.img?`<img src="${esc(m.img)}" alt="添付した写真">`:''}${esc(m.content)}</div>`).join(''):`<div class="emptyc"><b>料理中の質問にお答えします</b>手順、火加減、分量、失敗したときの対処など。冷蔵庫の中身と今日の献立をふまえて答えます。</div>`}</section>
+ ${aiNote()}
+ <div class="composer">
+  <div class="hs">${[1,3,5,10,15].map(n=>`<button class="tm" data-act="tStart" data-v="${n}">${n}分タイマー</button>`).join('')}${chips.map(c=>`<button data-act="quick" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+  ${S.chatImg?`<div class="attach"><span>写真を1枚添付しています</span><button class="link" style="font-size:14px" data-act="unattach">取り消す</button></div>`:''}
+  <div class="cf"><label class="ib filebtn" aria-label="写真を添付">${IC.cam}<input type="file" accept="image/*" id="chatFile"></label>
+  <textarea id="chatIn" rows="1" placeholder="メッセージ">${esc(S.draft)}</textarea>
+  <button class="sendb" data-act="send" aria-label="送信" ${S.chatBusy||!aiOn()?'disabled':''}>${IC2.up}</button></div>
+ </div>`};
+function ctx(){const set=settings(),pl=get('plan'),td=pl&&(pl.days||[]).find(d=>d.date===today());
+ return `あなたは台所で隣に立って手伝う料理アシスタントです。相手はいま料理中で、片手でスマホを見ています。
+- 返答は短く、基本3〜6行。長い手順は1〜2ステップずつ出し、「次は？」と聞かれたら続きを出す
+- 火加減・時間・分量は具体的な数字で。失敗しやすいポイントは先に一言
+- 代用やリカバリー（しょっぱい、焦げた、固い等）の相談には即答
+- 生焼け・油の発火・食中毒など安全に関わることははっきり注意
+- 見出しや#・**などのマークダウン記法は使わずプレーンテキストで
+- 自炊モード: ${MODES[set.mode]?MODES[set.mode].n+'（'+MODES[set.mode].d+'）':'バランス'}
+- 冷蔵庫にあるもの: ${fridgeSummary()||'不明'}
+${td?'- 今日の献立: '+(td.meals||[]).map(m=>m.slot+'：'+m.name).join(' / '):''}`}
+function renderChat(){$('#main').innerHTML=V.chat();window.scrollTo(0,document.body.scrollHeight);grow()}
+function grow(){const t=$('#chatIn');if(t){t.style.height='auto';t.style.height=Math.min(120,t.scrollHeight+2)+'px'}}
+
+/* ---------- render ---------- */
+function render(force){
+ document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-current',b.dataset.v===S.view?'page':'false'));
+ $('#ttl').textContent=TITLES[S.view]||'';
+ $('#hx').innerHTML=S.view==='fridge'&&fridge().length?`<label class="ib filebtn" aria-label="レシートから追加">${IC.cam}<input type="file" accept="image/*" class="scanIn"></label><button class="ib" data-act="newF" aria-label="食材を追加">${IC2.plus}</button>`:'';
+ $('#sync').textContent=S.remote&&!S.synced?'同期中…':'';
+ if(S.view==='chat'){if(force)renderChat();return}
+ $('#main').innerHTML=(V[S.view]||V.home)()}
+
+/* ---------- receipt review ---------- */
+const blankItem=()=>({name:'',qty:1,unit:'',price:'',category:'野菜',storage:'',shelfDays:'',toFridge:true});
+function normReceipt(j){const items=(Array.isArray(j.items)?j.items:[]).map(x=>{const cat=CATS.includes(x.category)?x.category:'その他';return {name:String(x.name||''),qty:+x.qty||1,unit:String(x.unit||''),price:Math.round(+x.price||0),category:cat,storage:['冷蔵','冷凍','常温'].includes(x.storage)?x.storage:'',shelfDays:Math.round(+x.shelfDays)||SHELF[cat],toFridge:cat!=='日用品'}}).filter(x=>x.name);
+ return {date:isDate(j.date)?j.date:today(),time:/^\d{2}:\d{2}$/.test(String(j.time||''))?j.time:'',store:String(j.store||''),items,aiTotal:Math.round(+j.total||0),advice:String(j.advice||'')}}
+const rSum=()=>R.items.reduce((a,i)=>a+(Math.round(+i.price)||0),0);
+function openSheet(title,body,right){$('#sheetIn').innerHTML=`<div class="grab"></div><div class="sh-h"><button class="link" data-act="closeSheet">${right?'キャンセル':'閉じる'}</button><b>${title}</b>${right?`<button class="link strong" data-act="${right[1]}" ${right[2]?'disabled':''}>${right[0]}</button>`:'<span></span>'}</div>${body}`;
+ if($('#sheet').hidden){$('#sheet').hidden=false;$('#sheetIn').scrollTop=0}document.body.style.overflow='hidden'}
+function closeSheet(){$('#sheet').hidden=true;document.body.style.overflow='';if(R&&R.preview)try{URL.revokeObjectURL(R.preview)}catch(e){}R=F=T=null;S.confirm=null;S.importSure=false}
+const catOpts=sel=>CATS.map(c=>`<option${c===sel?' selected':''}>${c}</option>`).join('');
+function renderReview(){if(!R)return;const img=R.preview?`<img class="preview" src="${esc(R.preview)}" alt="読み込んだレシート">`:'';
+ if(R.loading){openSheet('読み取り中',`${img}<div class="loading"><div class="spin"></div><span class="sub small">品名・金額・日時を読み取っています</span></div>`,null);return}
+ openSheet(R.editId?'レシートを編集':'レシートの確認',`${img}
+ <h2 class="gh">基本情報</h2><section class="group">
+  <label class="fr"><span>日付</span><input type="date" data-rh="date" value="${esc(R.date)}"></label>
+  <label class="fr"><span>時刻</span><input type="time" data-rh="time" value="${esc(R.time)}"></label>
+  <label class="fr"><span>お店</span><input data-rh="store" value="${esc(R.store)}" placeholder="未入力"></label></section>
+ <h2 class="gh"><span>品目 ${R.items.length}件</span><span>合計 <b class="num" id="rTotal" style="color:var(--ink)">${yen(rSum())}</b></span></h2>
+ <section class="group">${R.items.map((it,i)=>`<div class="it"><div class="it1"><input class="nm" data-ri="${i}" data-rf="name" value="${esc(it.name)}" placeholder="品名" aria-label="品名"><input class="pr" data-ri="${i}" data-rf="price" inputmode="numeric" value="${esc(it.price)}" placeholder="0" aria-label="金額"><span class="sub">円</span></div>
+  <div class="it2"><input class="q" data-ri="${i}" data-rf="qty" inputmode="decimal" value="${esc(it.qty)}" aria-label="数量"><input class="u" data-ri="${i}" data-rf="unit" value="${esc(it.unit)}" placeholder="単位" aria-label="単位"><select data-ri="${i}" data-rf="category" aria-label="カテゴリ">${catOpts(it.category)}</select>${R.editId?'':`<label><input type="checkbox" data-ri="${i}" data-rf="toFridge" ${it.toFridge?'checked':''}>冷蔵庫</label>`}<button class="del" data-act="rDel" data-v="${i}">削除</button></div></div>`).join('')}
+  <button class="r" data-act="rAdd" style="color:var(--ac)">${IC2.plus}品目を追加</button></section>
+ <p class="foot danger" id="rDiff"></p>
+ ${R.advice?`<h2 class="gh">ひとことアドバイス</h2><section class="group"><div class="adv">${esc(R.advice)}</div></section>`:(aiOn()&&!R.editId?`<div style="margin-top:16px"><button class="btn tint" data-act="rAdvice" ${R.advBusy?'disabled':''}>${R.advBusy?'作成中…':'買ったものへのアドバイスを見る'}</button></div>`:'')}
+ ${R.editId?'':'<p class="foot">「冷蔵庫」にチェックした品目は、保存すると冷蔵庫に追加されます。</p>'}`,['保存','rSave']);updTotal()}
+function renderRD(id){const r=get(id);if(!r){closeSheet();return}const its=r.items||[];
+ openSheet(esc(r.store||'レシート'),`<section class="group" style="margin-top:8px">
+  <div class="fr"><span>日時</span><span class="val">${esc(md(r.date))} ${esc(r.time||'')}</span></div>
+  <div class="fr"><span>お店</span><span class="val">${esc(r.store||'—')}</span></div>
+  <div class="fr"><span>合計</span><b class="num" style="margin-left:auto">${yen(r.total)}</b></div></section>
+ <h2 class="gh">品目 ${its.length}件</h2><section class="group">${its.map(i=>`<div class="r"><span class="m"><span class="t1">${esc(i.name)}</span><span class="t2">${esc(i.category||'')} ・ ${esc(fmtQ(i.qty,i.unit))}</span></span><span class="v b">${yen(i.price)}</span></div>`).join('')}</section>
+ ${r.advice?`<h2 class="gh">ひとことアドバイス</h2><section class="group"><div class="adv">${esc(r.advice)}</div></section>`:''}
+ <div style="display:grid;gap:8px;margin-top:20px"><button class="btn sec" data-act="editR" data-v="${esc(id)}">編集</button><button class="btn sec danger" data-act="delR" data-v="${esc(id)}">${S.confirm===id?'もう一度押すと削除します':'このレシートを削除'}</button></div>`,null)}
+function updTotal(){const el=$('#rTotal');if(!el||!R)return;const s=rSum();el.textContent=yen(s);const d=$('#rDiff');if(d)d.textContent=R.aiTotal&&Math.abs(R.aiTotal-s)>1?`レシートの合計 ${yen(R.aiTotal)} と ${yen(Math.abs(R.aiTotal-s))} ずれています。値引きや読み取りを確認してください`:''}
+const receiptPrompt=()=>{const set=settings();return `あなたは日本のスーパーのレシートを読み取る家計と栄養のアシスタントです。画像のレシートを読み取り、JSONだけを返してください（前後に文章やコードブロックを付けない）。
+今日: ${today()}
+自炊モード: ${MODES[set.mode]?MODES[set.mode].n:'バランス'}
+いまの冷蔵庫: ${fridgeSummary()||'不明'}
+形式:
+{"store":"店名","date":"YYYY-MM-DD","time":"HH:MM","items":[{"name":"品名","qty":1,"unit":"個","price":0,"category":"${CATS.join('|')}","storage":"冷蔵|冷凍|常温","shelfDays":3}],"total":0,"advice":"..."}
+ルール:
+- name はレシートの略称やカタカナ省略を一般的な名前に直す（例: ｺｸｻﾝﾄﾘﾑﾈ → 国産鶏むね肉）
+- price は値引き後・税込の金額（整数）。値引き行は直前の商品から引く。外税表記なら税込に換算
+- unit は 個/本/パック/袋/g など。qty は買った数
+- shelfDays は買った日から食べきるべき目安の日数（整数）
+- レジ袋は日用品。日付が読めなければ今日の日付
+- advice は買ったものへのアドバイスを3〜5行で。足りない栄養素や食品群、先に使い切るべきもの、保存のコツ、割高・買いすぎがあればやさしく指摘。冷蔵庫の中身とのダブり買いにも触れる`};
+async function onReceiptFile(file){const preview=URL.createObjectURL(file);R={loading:true,preview,date:today(),time:'',store:'',items:[],advice:''};renderReview();
+ if(!aiOn()||!canImg()){R={...R,loading:false,items:[blankItem()]};renderReview();toast('AIの画像読み取りが使えないため、手入力してください');return}
+ let blob=file;try{blob=await shrink(file)}catch(e){}
+ try{const r=await ai(receiptPrompt(),{images:[blob],json:true});if(!R||!R.loading)return;const j=normReceipt(parseJSON(r.text));R={...R,...j,loading:false};if(!R.items.length){R.items=[blankItem()];toast('品目を読み取れませんでした。手入力で補ってください')}renderReview()}
+ catch(e){if(!R)return;aiErr(e);R={...R,loading:false,items:[blankItem()]};renderReview()}}
+
+
+/* ---------- fridge item sheet ---------- */
+function renderF(){if(!F)return;const lv=[[1,'たっぷり'],[.5,'半分'],[.2,'少し']];
+ openSheet(F._new?'食材を追加':'食材の詳細',`<h2 class="gh">食材</h2><section class="group">
+  <label class="fr"><span>名前</span><input data-ff="name" value="${esc(F.name)}" placeholder="例：にんじん"></label>
+  <label class="fr"><span>カテゴリ</span><select data-ff="cat">${catOpts(F.cat)}</select></label>
+  <label class="fr"><span>場所</span><select data-ff="zone">${Object.entries(ZONES).map(([k,n])=>`<option value="${k}"${k===F.zone?' selected':''}>${n}</option>`).join('')}</select></label>
+  <label class="fr"><span>数量</span><input data-ff="qty" inputmode="decimal" value="${esc(F.qty)}"></label>
+  <label class="fr"><span>単位</span><input data-ff="unit" value="${esc(F.unit)}" placeholder="本・パック・g"></label>
+  <label class="fr"><span>購入日</span><input type="date" data-ff="added" value="${esc(F.added)}"></label>
+  <label class="fr"><span>期限の目安</span><input type="date" data-ff="exp" value="${esc(F.exp)}"></label></section>
+ <h2 class="gh">残りの量</h2><div class="segc">${lv.map(([v,n])=>`<button data-act="fLeft" data-v="${v}" aria-pressed="${Math.abs((+F.left||0)-v)<.01}">${n}</button>`).join('')}</div>
+ ${F._new?'':`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:24px"><button class="btn tint" data-act="fEnd" data-v="0">使い切った</button><button class="btn sec" data-act="fEnd" data-v="1">捨てた</button></div>
+ <p class="foot">使い切るまでの日数と捨てた割合は、次に買う量と時期の提案に使われます。</p>
+ <div style="margin-top:16px"><button class="btn sec danger" data-act="fDel">記録せずに削除</button></div>`}`,['保存','fSave'])}
+
+/* ---------- settings sheet ---------- */
+function renderT(){if(!T)return;openSheet('設定',`<h2 class="gh">基本</h2><section class="group">
+  <label class="fr"><span>月の予算</span><input data-tf="budget" inputmode="numeric" value="${esc(T.budget)}"><span class="sub">円</span></label>
+  <label class="fr"><span>人数</span><input data-tf="people" inputmode="numeric" value="${esc(T.people)}"><span class="sub">人</span></label>
+  <label class="fr"><span>自炊レベル</span><select data-tf="mode">${Object.entries(MODES).map(([k,m])=>`<option value="${k}"${k===T.mode?' selected':''}>${m.n}</option>`).join('')}</select></label></section>
+ ${inClaude?`<h2 class="gh">AI（Claude）</h2><section class="group">
+  <label class="fr"><span>モデル</span><select data-tf="model">${MODELS.map(([v,n])=>`<option value="${v}"${v===T.model?' selected':''}>${n}</option>`).join('')}</select></label></section>
+ <p class="foot">レシート読み取り・アドバイス・献立・アシスタントで使います。Haikuは速く、Opusはより正確です。使えないモデルの場合は自動になります。</p>`
+ :`<h2 class="gh">AI（Gemini）</h2><section class="group">
+  <label class="fr"><span>APIキー</span><input type="password" data-tf="gkey" value="${esc(T.gkey)}" placeholder="未設定" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+  <label class="fr"><span>モデル</span><select data-tf="gmodel">${[...new Set([T.gmodel,...T.gmodels])].map(n=>`<option value="${esc(n)}"${n===T.gmodel?' selected':''}>${esc(n)}</option>`).join('')}</select></label>
+  <button class="r" data-act="gTest" ${T.gBusy?'disabled':''}><span class="m" style="color:var(--ac)">${T.gBusy?'確認中…':'接続を確認してモデル一覧を取得'}</span></button></section>
+ <p class="foot">キーはこの端末の中だけに保存されます。Google AI Studio で発行できます。無料枠では入力内容（レシート写真など）がGoogleのサービス改善に使われる場合があります。</p>`}
+ <h2 class="gh">データ</h2><section class="group">
+  <button class="r" data-act="exportData"><span class="m" style="color:var(--ac)">バックアップを書き出す</span></button>
+  <button class="r" data-act="importOpen"><span class="m" style="color:var(--ac)">バックアップを読み込む</span></button></section>
+ <p class="foot">別の端末や、claude.ai版とアプリ版の間でデータを移せます。</p>
+ <h2 class="gh">買い物に行く曜日</h2><div class="segc">${[...WD].map((w,i)=>`<button data-act="tDay" data-v="${i}" aria-pressed="${T.days.includes(i)}">${w}</button>`).join('')}</div>
+ <p class="foot">選ばない場合は、これまでの買い物の間隔から予測します。</p>`,['保存','tSave'])}
+
+function renderImport(){openSheet('バックアップの読み込み',`<p class="foot" style="margin:8px 16px 0">書き出したファイルを選ぶか、コピーした内容を貼り付けてください。</p>
+ <h2 class="gh">ファイル</h2><section class="group"><label class="r filebtn" style="position:relative"><span class="m" style="color:var(--ac)">ファイルを選ぶ</span><input type="file" accept=".json,application/json,text/plain" id="importFile"></label></section>
+ <h2 class="gh">貼り付け</h2><textarea id="importText" rows="5" style="width:100%;border:0;border-radius:12px;padding:12px 16px;background:var(--card);font-size:16px;resize:vertical" placeholder="ここに貼り付け">${esc(S.importText||'')}</textarea>
+ <p class="foot ${S.importSure?'danger':''}">${S.importSure?'もう一度「読み込む」を押すと、いまのデータがすべて置き換わります。':'読み込むと、いまのデータはすべて置き換わります。'}</p>`,['読み込む','doImport'])}
+
+/* ---------- toast & timer ---------- */
+let tt=null;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+let tInt=null,actx=null;
+function beep(){if(!actx)return;try{for(let i=0;i<4;i++){const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;o.connect(g);g.connect(actx.destination);const t0=actx.currentTime+i*.45;g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.3,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+.35);o.start(t0);o.stop(t0+.4)}}catch(e){}}
+function tick(){const el=$('#hTimer');if(!S.timerEnd){el.hidden=true;return}const ms=S.timerEnd-Date.now();
+ if(ms<=0){S.timerEnd=0;clearInterval(tInt);el.hidden=true;beep();try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}toast('タイマー終了！');return}
+ const s=Math.ceil(ms/1000);el.hidden=false;el.textContent=`${Math.floor(s/60)}:${pad(s%60)}`}
+
+/* ---------- actions ---------- */
+const A={
+ go:v=>{if(location.hash.slice(1)===v){S.view=v;render(true)}else location.hash=v},
+ mPrev:()=>{const d=pd(S.month+'-01');d.setMonth(d.getMonth()-1);S.month=ds(d).slice(0,7);render()},
+ mNext:()=>{const d=pd(S.month+'-01');d.setMonth(d.getMonth()+1);S.month=ds(d).slice(0,7);render()},
+ cPrev:()=>{const d=pd(S.calMonth+'-01');d.setMonth(d.getMonth()-1);S.calMonth=ds(d).slice(0,7);render()},
+ cNext:()=>{const d=pd(S.calMonth+'-01');d.setMonth(d.getMonth()+1);S.calMonth=ds(d).slice(0,7);render()},
+ openR:v=>{S.confirm=null;renderRD(v)},
+ fz:v=>{S.fz=v;render()},
+ delR:v=>{if(S.confirm!==v){S.confirm=v;renderRD(v);return}closeSheet();del(v);const fr=fridge();if(fr.some(f=>f.rid===v))setFridge(fr.filter(f=>f.rid!==v));toast('レシートを削除しました')},
+ editR:v=>{const r=get(v);if(!r)return;R={...cl(r),editId:v,items:cl(r.items||[]).map(i=>({...i,toFridge:false}))};if(!R.items.length)R.items=[blankItem()];renderReview()},
+ manual:()=>{R={date:today(),time:'',store:'',items:[blankItem()],advice:''};renderReview()},
+ closeSheet:()=>closeSheet(),
+ rAdd:()=>{R.items.push(blankItem());renderReview();const l=document.querySelectorAll('[data-rf=name]');l[l.length-1]&&l[l.length-1].focus()},
+ rDel:v=>{R.items.splice(+v,1);if(!R.items.length)R.items.push(blankItem());renderReview()},
+ rAdvice:async()=>{const its=R.items.filter(i=>String(i.name).trim());if(!its.length){toast('先に品目を入力してください');return}R.advBusy=true;renderReview();
+  try{const r=await ai(`日本の家庭の買い物の内容です。買ったものへのアドバイスを3〜5行のプレーンテキストで返してください。足りない栄養素や食品群、先に使い切るべきもの、保存のコツ、割高・買いすぎ、冷蔵庫とのダブり買いをやさしく指摘してください。\n自炊モード: ${(MODES[settings().mode]||MODES.balance).n}\n冷蔵庫: ${fridgeSummary()||'不明'}\n買ったもの: ${its.map(i=>`${i.name}${fmtQ(i.qty,i.unit)} ${Math.round(+i.price)||0}円`).join('、')}`);if(R){R.advice=r.text.trim();R.advBusy=false;renderReview()}}
+  catch(e){aiErr(e);if(R){R.advBusy=false;renderReview()}}},
+ rSave:()=>{const items=R.items.filter(i=>String(i.name).trim()).map(i=>({...i,name:String(i.name).trim(),qty:+i.qty||1,price:Math.round(+i.price)||0}));if(!items.length){toast('品目を1つ以上入力してください');return}
+  const date=isDate(R.date)?R.date:today();const body={date,time:R.time||'',store:String(R.store||'').trim(),total:items.reduce((a,i)=>a+i.price,0),items:items.map(({toFridge,...x})=>x),advice:R.advice||'',createdAt:R.createdAt||Date.now()};
+  if(R.editId){put(R.editId,body);closeSheet();toast('保存しました');return}
+  const id='r_'+uid36();put(id,body);
+  const add=items.filter(i=>i.toFridge).map(i=>({id:uid36(),name:i.name,cat:i.category,qty:i.qty,unit:i.unit||'',left:1,zone:zoneOf(i.category,i.storage),added:date,exp:addD(date,Math.round(+i.shelfDays)||SHELF[i.category]||7),rid:id}));
+  if(add.length)setFridge([...cl(fridge()),...add]);
+  const pl=get('plan');if(pl&&(pl.shopping||[]).length){const bought=new Set(items.map(i=>norm(i.name)));const sh=cl(pl.shopping).map(x=>bought.has(norm(x.name))?{...x,done:true}:x);if(sh.some((x,i)=>x.done!==pl.shopping[i].done))put('plan',{...cl(pl),shopping:sh})}
+  closeSheet();S.month=date.slice(0,7);toast(add.length?`${add.length}品を冷蔵庫に入れました`:'保存しました')},
+ newF:()=>{F={id:uid36(),name:'',cat:'野菜',qty:1,unit:'',left:1,zone:'veg',added:today(),exp:addD(today(),5),_new:true};renderF()},
+ editF:v=>{const f=fridge().find(x=>x.id===v);if(!f)return;F=cl(f);renderF()},
+ fLeft:v=>{F.left=+v;renderF()},
+ fSave:()=>{if(!String(F.name).trim()){toast('名前を入力してください');return}const {_new,...f}=F;f.name=String(f.name).trim();f.qty=+f.qty||1;f.left=+f.left||1;if(!isDate(f.exp))f.exp=addD(today(),SHELF[f.cat]||7);if(!isDate(f.added))f.added=today();
+  const fr=cl(fridge());const i=fr.findIndex(x=>x.id===f.id);i<0?fr.push(f):(fr[i]=f);setFridge(fr);closeSheet()},
+ fEnd:async v=>{const f=F;closeSheet();setFridge(fridge().filter(x=>x.id!==f.id));await logEnd(f,v==='1');toast(v==='1'?'記録しました。次からは少なめに提案します':`${f.name}：${Math.max(1,diffD(f.added,today()))}日で使い切り。学習しました`)},
+ fDel:()=>{const f=F;closeSheet();setFridge(fridge().filter(x=>x.id!==f.id))},
+ settings:()=>{const s=settings();T={budget:s.budget,people:s.people,mode:s.mode,model:s.model||'',days:[...(s.days||[])],gkey:gemKey(),gmodel:gemModel(),gmodels:gemList()};renderT()},
+ gTest:async()=>{if(!T)return;const key=String(T.gkey||'').trim();if(!key){toast('APIキーを入力してください');return}T.gBusy=true;renderT();
+  try{const l=await gemModels(key);if(!T)return;T.gmodels=l;lsSet(GL,JSON.stringify(l));if(!l.includes(T.gmodel))T.gmodel=bestModel(l);
+   await gemini('「OK」とだけ返してください',{},key,T.gmodel);toast(`接続できました（${T.gmodel}）`)}
+  catch(e){aiErr(e)}if(T){T.gBusy=false;renderT()}},
+ exportData:()=>{const txt=JSON.stringify({app:'food-app',v:1,at:new Date().toISOString(),docs:S.docs});
+  if(!inClaude){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));a.download=`food-backup-${today()}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast('バックアップを書き出しました');return}catch(e){}}
+  try{navigator.clipboard.writeText(txt).then(()=>toast('バックアップをコピーしました。メモアプリなどに貼り付けて保存してください'),()=>toast('コピーできませんでした'))}catch(e){toast('コピーできませんでした')}},
+ importOpen:()=>{closeSheet();S.importText='';renderImport()},
+ doImport:async()=>{const el=$('#importText');let j;try{j=JSON.parse((el&&el.value)||S.importText||'')}catch(e){toast('読み込めませんでした。内容を確認してください');return}
+  const docs=j&&j.app==='food-app'&&j.docs&&typeof j.docs==='object'?j.docs:null;if(!docs){toast('このアプリのバックアップではないようです');return}
+  if(!S.importSure){S.importSure=true;S.importText=el?el.value:S.importText;renderImport();return}
+  S.importSure=false;closeSheet();
+  if(col){for(const k of Object.keys(S.docs))if(!(k in docs))del(k);for(const [k,v] of Object.entries(docs))put(k,v)}
+  else{S.docs=cl(docs);saveLocal();render()}
+  toast(`${Object.keys(docs).filter(k=>k.startsWith('r_')).length}件のレシートを含むデータを読み込みました`)},
+ tDay:v=>{const n=+v;T.days=T.days.includes(n)?T.days.filter(x=>x!==n):[...T.days,n].sort();renderT()},
+ tSave:()=>{if(!inClaude){lsSet(GK,String(T.gkey||'').trim());lsSet(GM,T.gmodel||'')}put('settings',{budget:Math.max(0,Math.round(+T.budget)||0),people:clamp(Math.round(+T.people)||1,1,12),mode:MODES[T.mode]?T.mode:'balance',model:MODELS.some(m=>m[0]===T.model)?T.model:'',days:T.days});S.po=null;closeSheet();toast('設定を保存しました')},
+ po:(v,b)=>{const k=b.dataset.k;S.po[k]=k==='days'?+v:v;render()},
+ pp:v=>{S.po.people=clamp(S.po.people+(+v),1,12);render()},
+ genPlan:async()=>{if(!aiOn()||S.planBusy)return;S.planBusy=true;render();const o=S.po,set=settings(),st=stats();
+  const top=Object.values(st).sort((a,b)=>b.buyDates.length-a.buyDates.length).slice(0,12).map(s=>s.name).join('、');
+  const mt=receipts().filter(r=>String(r.date).startsWith(today().slice(0,7))).reduce((a,r)=>a+(+r.total||0),0),rest=(+set.budget||0)-mt;
+  const prompt=`あなたは管理栄養士で、家庭料理が得意な献立プランナーです。JSONだけを返してください（前後に文章やコードブロックを付けない）。
+条件:
+- 期間: ${today()} から ${o.days}日間
+- 作る食事: ${o.meals==='夜'?'夕食のみ':o.meals==='昼夜'?'昼食と夕食':'朝食・昼食・夕食'}
+- 人数: ${o.people}人
+- 自炊モード: ${MODES[o.mode].n}（${MODES[o.mode].d}）
+- 今月の食費の残り予算: ${set.budget?(rest>0?yen(rest):'ほぼなし（節約重視で）'):'指定なし'}
+- 冷蔵庫にあるもの（期限が近い順）: ${fridgeSummary()||'ほぼ空'}
+- よく買う食材: ${top||'データなし'}
+ルール: 期限が近い食材から優先して使い切る。たんぱく質・野菜・主食のバランスを1日単位で整える。同じ主菜を続けない。自炊モードの手間に合わせる。買い物リストは冷蔵庫にあるものを除き、期間中に必要な量を${o.people}人分でまとめる。塩・砂糖・醤油・味噌・油などの基本調味料は持っている前提。tipは20字程度。
+形式:
+{"summary":"この献立のねらいを1〜2文","nutrition":"栄養面のポイントを1〜2文","days":[{"date":"YYYY-MM-DD","meals":[{"slot":"朝|昼|夜","name":"料理名","minutes":15,"uses":["冷蔵庫から使う食材"],"tip":"ひとこと"}]}],"shopping":[{"name":"食材名","qty":1,"unit":"個","category":"${CATS.join('|')}","why":"何に使うか"}]}`;
+  try{const r=await ai(prompt,{json:true});const j=parseJSON(r.text);
+   const days=(Array.isArray(j.days)?j.days:[]).filter(d=>d&&Array.isArray(d.meals)).map(d=>({date:isDate(d.date)?d.date:today(),meals:d.meals.map(m=>({slot:String(m.slot||''),name:String(m.name||''),minutes:Math.round(+m.minutes)||'',uses:(Array.isArray(m.uses)?m.uses:[]).map(String),tip:String(m.tip||'')}))}));
+   if(!days.length)throw new Error('empty');
+   const shopping=(Array.isArray(j.shopping)?j.shopping:[]).map(x=>({name:String(x.name||''),qty:+x.qty||1,unit:String(x.unit||''),category:CATS.includes(x.category)?x.category:'その他',why:String(x.why||''),done:false})).filter(x=>x.name);
+   S.planBusy=false;put('plan',{created:today(),mode:o.mode,meals:o.meals,people:o.people,days,shopping,summary:String(j.summary||''),nutrition:String(j.nutrition||'')});toast(shopping.length?'買うものをカレンダーの次の買い物日に入れました':'献立ができました')}
+  catch(e){S.planBusy=false;render();if(e&&e.code)aiErr(e);else toast('うまく作れませんでした。日数を減らしてもう一度お試しください')}},
+ pBuy:v=>{const pl=cl(get('plan'));if(!pl)return;const x=pl.shopping[+v];if(!x)return;x.done=!x.done;put('plan',pl)},
+ cook:v=>{S.draft=`「${v}」を作ります。材料と最初の手順を教えて`;A.go('chat')},
+ selD:v=>{S.selDate=v;S.calMonth=v.slice(0,7);render()},
+ tchk:v=>{S.checks[v]?delete S.checks[v]:(S.checks[v]=1);const keep={};const lim=addD(today(),-30);for(const k in S.checks)if(k.slice(0,10)>=lim)keep[k]=1;S.checks=keep;try{localStorage.setItem('food-checks',JSON.stringify(keep))}catch(e){}render()},
+ copyTrip:v=>{const x=suggest().trips.find(t=>t.date===v);if(!x)return;const txt=`${md(v)} の買い物\n`+x.items.map(i=>`・${i.name} ${fmtQ(i.qty,i.unit)}`).join('\n');
+  try{navigator.clipboard.writeText(txt).then(()=>toast('コピーしました'),()=>toast('コピーできませんでした'))}catch(e){toast('コピーできませんでした')}},
+ quick:v=>send(v),
+ send:()=>send(),
+ unattach:()=>{S.chatImg=null;renderChat()},
+ tStart:v=>{try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume&&actx.resume()}catch(e){}S.timerEnd=Date.now()+(+v)*60000;clearInterval(tInt);tInt=setInterval(tick,500);tick();toast(`${v}分のタイマーを始めました`)},
+ tStop:()=>{S.timerEnd=0;clearInterval(tInt);tick();toast('タイマーを止めました')}
+};
+async function send(text){const msg=String(text??S.draft).trim();const img=S.chatImg;if((!msg&&!img)||S.chatBusy)return;if(!aiOn()){aiErr({code:'none'});return}
+ S.chat.push({role:'user',content:msg||'この写真を見てアドバイスして',img:img?URL.createObjectURL(img):null});if(text===undefined)S.draft='';S.chatImg=null;S.chatBusy=true;
+ const bot={role:'assistant',content:'…'};S.chat.push(bot);renderChat();const bubble=$('#msgs').lastElementChild;
+ const hist=S.chat.slice(0,-1).slice(-16);while(hist.length&&hist[0].role!=='user')hist.shift();
+ const input=hist.map((m,i)=>({role:m.role,content:(i===0?ctx()+'\n\n---\n':'')+(m.content||'(写真)')}));
+ const opts={onText:({text})=>{bot.content=text;bubble.textContent=text;window.scrollTo(0,document.body.scrollHeight)}};
+ if(img&&canImg()){try{opts.images=[await shrink(img,1400)]}catch(e){opts.images=[img]}}
+ try{const r=await ai(input,opts);bot.content=r.text||bot.content}catch(e){bot.content='（うまく答えられませんでした。もう一度送ってください）';aiErr(e)}
+ S.chatBusy=false;if(S.view==='chat')renderChat()}
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;if(b.tagName==='INPUT'&&b.type==='checkbox'){A[b.dataset.act]&&A[b.dataset.act](b.dataset.v,b,e);return}
+ const fn=A[b.dataset.act];if(fn){e.preventDefault();fn(b.dataset.v,b,e)}});
+function onIn(e){const t=e.target;
+ if(t.type==='file'){if(e.type!=='change')return;const f=t.files&&t.files[0];t.value='';if(!f)return;if(t.id==='importFile'){f.text().then(x=>{S.importText=x;S.importSure=false;renderImport();toast('ファイルを読み込みました。「読み込む」を押してください')});return}if(t.classList.contains('scanIn'))onReceiptFile(f);else if(t.id==='chatFile'){S.chatImg=f;S.draft=($('#chatIn')||{}).value||S.draft;renderChat()}return}
+ if(t.dataset.rf!==undefined&&R){const it=R.items[+t.dataset.ri];if(!it)return;it[t.dataset.rf]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.rf==='price'||t.dataset.rf==='qty')updTotal();return}
+ if(t.dataset.rh&&R){R[t.dataset.rh]=t.value;return}
+ if(t.dataset.ff&&F){F[t.dataset.ff]=t.value;if(t.dataset.ff==='cat'&&F._new&&e.type==='change'){F.zone=zoneOf(t.value,'');F.exp=addD(F.added||today(),SHELF[t.value]||7);renderF()}return}
+ if(t.dataset.tf&&T){T[t.dataset.tf]=t.type==='checkbox'?t.checked:t.value;return}
+ if(t.id==='chatIn'){S.draft=t.value;grow()}}
+document.addEventListener('input',onIn);document.addEventListener('change',onIn);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet();if(e.target.id==='chatIn'&&e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();send()}});
+window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(VIEWS.includes(v)){S.view=v;window.scrollTo(0,0);render(true)}});
+
+/* ---------- boot ---------- */
+loadLocal();render(true);
+if(!inClaude){try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});navigator.storage&&navigator.storage.persist&&navigator.storage.persist().catch(()=>{})}catch(e){}}
+(async()=>{
+ const cu=window.claude&&window.claude.use?n=>window.claude.use(n):null;
+ if(!cu){aiReady=true;render(true);return}
+ const [u,db,sm]=await Promise.all([cu('user').catch(()=>null),cu('db').catch(()=>null),cu('sample').catch(()=>null)]);
+ sample=sm;if(sample){try{const l=await sample.limits();imgOK=!!(l&&l.images)}catch(e){imgOK=false}}aiReady=true;
+ let id=null;try{id=u?await u.id():null}catch(e){}
+ if(db&&id){col=db.collection('data/users/'+id);S.remote=true;S.docs={};
+  const to=setTimeout(()=>{$('#sync').textContent='接続を待っています…'},10000);
+  col.onSnapshot(snap=>{S.docs={};snap.docs.forEach(d=>{if(d.exists)S.docs[d.id]=d.data()});if(!snap.metadata.fromCache){S.synced=true;clearTimeout(to)}render()},
+   e=>{clearTimeout(to);console.warn(e);S.synced=true;$('#sync').textContent='';toast('データに接続できませんでした。表示が古い可能性があります')});
+ }
+ render(true)})();
+}
+</script>
+</body>
+</html>
