@@ -140,7 +140,7 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--ac);margin:0;flex
 @keyframes dopen{70%{opacity:1}to{transform:perspective(900px) rotateY(-100deg);opacity:0;visibility:hidden}}
 @media (prefers-reduced-motion:reduce){.door-cover{display:none}.fd svg{transition:none}}
 /* toolbar / plan extras / shopping mode */
-.ftool{display:flex;align-items:center;gap:4px}.ftool .segc{flex:1}
+.ftool{display:flex;align-items:center;gap:0}.ftool .ib{width:40px}.ftool .segc{flex:1}
 .notes{display:grid;gap:6px;margin-top:12px}
 .note-r{display:flex;align-items:center;gap:10px;background:var(--fill);border-radius:10px;padding:0 12px;min-height:44px}
 .note-r span{flex:none;font-size:13px;color:var(--sub);width:2.6em}
@@ -389,7 +389,7 @@ const setS=o=>put('settings',{...cl(get('settings')||{}),...o});
 
 /* ---------- AI ---------- */
 function parseJSON(t){const s=String(t||'');const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw new Error('JSONが見つかりません');return JSON.parse(s.slice(a,b+1))}
-function aiErr(e){console.warn(e);const c=e&&e.code;if(c==='not_granted'){sample=null;toast('AIの利用が許可されていません');render()}else if(c==='rate_limited')toast('AIの利用上限に達したか、混み合っています。少し待ってからもう一度どうぞ');else if(c==='bad_key')toast('Gemini APIキーを確認してください');else if(c==='bad_model')toast('モデルが見つかりません。設定でモデルを選び直してください');else if(c==='none')toast('AIが設定されていません。設定でGemini APIキーを登録してください');else if(c==='network')toast('通信できませんでした。電波の状態を確認してください');else toast('AIの応答をうまく受け取れませんでした。もう一度お試しください')}
+function aiErr(e){console.warn(e);const c=e&&e.code;if(c==='not_granted'){sample=null;toast('AIの利用が許可されていません');render()}else if(c==='rate_limited')toast('AIの利用上限に達したか、混み合っています。少し待ってからもう一度どうぞ');else if(c==='bad_key')toast('Gemini APIキーを確認してください');else if(c==='bad_model')toast('モデルが見つかりません。設定でモデルを選び直してください');else if(c==='none')toast('AIが設定されていません。設定でGemini APIキーを登録してください');else if(c==='network')toast('通信できませんでした。電波の状態を確認してください');else toast('AIの応答をうまく受け取れませんでした'+(e&&e.status?`（${e.status}${e.message?'：'+String(e.message).slice(0,80):''}）`:'。もう一度お試しください'))}
 const MODELS=[['','自動'],['claude-haiku-5-5','Haiku 5.5'],['claude-sonnet-5-5','Sonnet 5.5'],['claude-opus-5-5','Opus 5.5']];
 let warned=false;
 const aiOpts=x=>{const m=settings().model;return {modelTier:'default',cache:false,...(m?{model:m}:{}),...(x||{})}};
@@ -512,13 +512,14 @@ V.fridge=()=>{
  <div class="pantry">${lbl('ストック棚（常温）',pan)}<div class="items">${pan.map(f=>food(f)).join('')||'<span class="emp">空っぽ</span>'}</div></div>`;
  const row=f=>{const [c,l]=bd(f);return `<button class="r" data-act="editF" data-v="${esc(f.id)}"><span class="m"><span class="t1">${esc(f.name)}</span><span class="t2">${esc(fmtQ(f.qty,f.unit))} ・ ${lab(f)} ・ ${esc(md(f.added))}購入</span></span><span class="badge b-${c}">${l}</span><i class="chev"></i></button>`};
  const list=Object.keys(ZONES).map(k=>{const it=inZ(k);return it.length?`<h2 class="gh"><span>${ZONES[k]}</span><span>${it.length}品</span></h2><section class="group">${it.map(row).join('')}</section>`:''}).join('')||'<p class="note">まだ何も入っていません。</p>';
- return `<div class="ftool"><div class="segc">${[['fridge','冷蔵庫'],['list','リスト']].map(([k,n])=>`<button data-act="fv" data-v="${k}" aria-pressed="${fv===k}">${n}</button>`).join('')}</div><label class="ib filebtn" aria-label="レシートから追加">${IC.cam}<input type="file" accept="image/*" class="scanIn"></label><button class="ib" data-act="newF" aria-label="食材を手で追加">${IC2.plus}</button></div>
+ return `<div class="ftool"><div class="segc">${[['fridge','冷蔵庫'],['list','リスト']].map(([k,n])=>`<button data-act="fv" data-v="${k}" aria-pressed="${fv===k}">${n}</button>`).join('')}</div><label class="ib filebtn" aria-label="レシートから追加">${IC.cam}<input type="file" accept="image/*" class="scanIn"></label><button class="ib" data-act="shareOpen" aria-label="冷蔵庫の中身を共有">${IC2.share}</button><button class="ib" data-act="newF" aria-label="食材を手で追加">${IC2.plus}</button></div>
  <div class="fleg"><span><i class="bad"></i>明日まで・期限切れ <b>${nb}</b></span><span><i class="warn"></i>3日以内 <b>${nw}</b></span><span><i class="ok"></i>余裕あり <b>${no}</b></span></div>
  ${fv==='list'?list:visual}
  ${!fr.length?`<div class="row" style="margin-top:4px;flex-wrap:nowrap"><label class="btn filebtn">${IC.cam}レシートを読み取る<input type="file" accept="image/*" class="scanIn"></label><button class="btn sec" style="width:auto;flex:none" data-act="newF">手で追加</button></div>`:''}
  ${nt?`<section class="group" style="margin-top:16px"><button class="r" data-act="go" data-v="cal"><span class="m"><span class="t1">次の買い物　${esc(md(nt.date))}</span><span class="t2">${nt.items.length?nt.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しが必要なものはありません'}</span></span><span class="v">${nt.items.length}品</span><i class="chev"></i></button></section>`:''}
  <p class="foot" style="margin-top:12px">${fr.length?'中身の色の高さが残りの量です。食材をタップすると、残量の変更や「使い切った」の記録ができます。':'レシートを読み取ると、買った食材がここに並びます。'}</p>`};
 IC.cart='<svg class="i" viewBox="0 0 24 24"><path d="M3 4h2.5l2.2 11.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6.3"/><circle cx="10" cy="20.5" r="1.3"/><circle cx="17" cy="20.5" r="1.3"/></svg>';
+IC2.share='<svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M7.5 7.5 12 3l4.5 4.5M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/></svg>';
 IC2.U='<svg class="i" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg>';IC2.D='<svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';IC2.grip='<svg class="i" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></svg>';
 V.plan=()=>{
  const set=settings(),pl=get('plan'),meals=set.meals,nd=clamp(+set.planDays||5,1,14);
@@ -655,6 +656,24 @@ function renderShop(){let el=$('#shop');if(!S.shop){if(el)el.hidden=true;documen
  <div class="cf" style="margin-top:16px"><input id="shopAdd" class="addin" placeholder="リストに追加（例：牛乳）" enterkeyhint="done"><button class="sendb" data-act="shopAdd" aria-label="追加">${IC2.plus}</button></div>
  <div class="acts2" style="margin-top:16px"><label class="btn filebtn">${IC.cam}レシート<input type="file" accept="image/*" class="scanIn"></label><button class="btn sec" data-act="shopClose">終える</button></div></div>`;
  el.hidden=false;document.body.style.overflow='hidden'}
+/* ---------- share fridge ---------- */
+function shareText(o){const t=today(),fr=fridge().slice().sort((a,b)=>String(a.exp).localeCompare(String(b.exp)));const now=new Date();
+ const lab=f=>{const l=+f.left||0;return l>=.99?'たっぷり':l>=.5?'半分':'少し'};
+ const dl=f=>{const d=diffD(t,f.exp);return d<0?'期限切れ':d===0?'今日まで':d===1?'明日まで':`あと${d}日`};
+ const L=[`【冷蔵庫の中身】${md(t)} ${pad(now.getHours())}:${pad(now.getMinutes())} 時点`];
+ const soon=fr.filter(f=>diffD(t,f.exp)<=2);if(o.soon&&soon.length){L.push('','! 早めに使いたいもの');soon.forEach(f=>L.push(`・${f.name}（${dl(f)}）`))}
+ for(const k of Object.keys(ZONES)){const it=fr.filter(f=>(ZONES[f.zone]?f.zone:'fridge')===k);if(!it.length)continue;L.push('',`■ ${ZONES[k]}（${it.length}品）`);
+  it.forEach(f=>L.push(`・${f.name} ${fmtQ(f.qty,f.unit)}（残り${lab(f)}・${dl(f)}）`))}
+ if(!fr.length)L.push('','（空っぽです）');
+ if(o.list){const tr=suggest().trips[0];const items=tr?tr.items.filter(i=>!i.done):[];if(items.length){L.push('',`【買い物リスト ${md(tr.date)}】`);groupAisle(items).forEach(([c,g])=>{L.push(`〈${c}〉`);g.forEach(i=>L.push(`・${i.name} ${fmtQ(i.qty,i.unit)}`))})}}
+ return L.join('\n')}
+function renderShare(){const o=S.shareOpt;const canShare=!inClaude&&!!navigator.share;
+ openSheet('冷蔵庫を共有',`<p class="foot" style="margin:8px 16px 10px">家族やパートナーにLINEやメッセージで送れます。送る前に文章を直すこともできます。</p>
+ <section class="group">
+  <label class="fr"><span>期限が近いものを先頭に</span><input type="checkbox" data-sh="soon" ${o.soon?'checked':''}></label>
+  <label class="fr"><span>買い物リストも付ける</span><input type="checkbox" data-sh="list" ${o.list?'checked':''}></label></section>
+ <h2 class="gh">送る内容</h2><textarea id="shareText" rows="12" style="width:100%;border:0;border-radius:12px;padding:12px 16px;background:var(--card);font-size:15px;line-height:1.6;resize:vertical">${esc(shareText(o))}</textarea>
+ <div class="acts2" style="margin-top:12px">${canShare?`<button class="btn" data-act="doShare">${IC2.share}共有する</button>`:''}<button class="btn ${canShare?'sec':''}" data-act="doCopy" ${canShare?'':'style="grid-column:1/-1"'}>コピー</button></div>`,null)}
 /* ---------- aisle order sheet ---------- */
 function renderAisle(){const o=S.aisleTmp;openSheet('売り場の順番',`<p class="foot" style="margin:8px 16px 10px">よく行くお店で回る順に並べてください。買い物リストがこの順番で並びます。右端のつまみをドラッグするか、矢印で動かせます。</p>
  <section class="group" id="aisleList">${o.map((c,i)=>`<div class="r arow" data-cat="${esc(c)}"><i class="adot" style="background:${CATCOL[c]||'#aeaeb2'}"></i><span class="m">${esc(c)}</span><button class="ib amv" data-act="aMove" data-v="${i}" data-d="-1" aria-label="上へ" ${i===0?'disabled':''}>${IC2.U}</button><button class="ib amv" data-act="aMove" data-v="${i}" data-d="1" aria-label="下へ" ${i===o.length-1?'disabled':''}>${IC2.D}</button><span class="grip" data-grip="1" aria-hidden="true">${IC2.grip}</span></div>`).join('')}</section>
@@ -712,13 +731,14 @@ const TOOLS=[
 ];
 let notesBuf=null;function note(t){if(notesBuf)notesBuf.push(t)}
 const claudeTools=()=>TOOLS.map(t=>({name:t.name,description:t.description,inputSchema:t.schema,execute:i=>{try{return t.run(i||{})}catch(e){return {ok:false,error:String(e&&e.message||e)}}}}));
-const gSchema=s=>{if(!s||typeof s!=='object')return s;const o={};for(const [k,v] of Object.entries(s)){if(k==='type')o.type=String(v).toUpperCase();else if(k==='properties'){o.properties={};for(const [pk,pv] of Object.entries(v))o.properties[pk]=gSchema(pv)}else if(k==='items')o.items=gSchema(v);else o[k]=v}return o};
+const gSchema=s=>{if(!s||typeof s!=='object')return s;const o={};for(const [k,v] of Object.entries(s)){if(k==='type')o.type=String(v).toUpperCase();else if(k==='properties'){o.properties={};for(const [pk,pv] of Object.entries(v))o.properties[pk]=gSchema(pv)}else if(k==='items')o.items=gSchema(v);else o[k]=v}
+ if(o.enum&&o.type!=='STRING'){o.description=(o.description?o.description+' ':'')+'（'+o.enum.join('・')+'のいずれか）';delete o.enum}if(o.enum)o.enum=o.enum.map(String);return o};
 async function geminiTools(input,x){const msgs=typeof input==='string'?[{role:'user',content:input}]:input;
  const contents=msgs.map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:String(m.content||'')}]}));
  if(x.images&&x.images.length){const last=contents[contents.length-1];for(const im of x.images)last.parts.push({inline_data:{mime_type:im.type||'image/jpeg',data:await b64(im)}})}
  const tools=[{functionDeclarations:TOOLS.map(t=>({name:t.name,description:t.description,parameters:gSchema(t.schema)}))}];
  for(let step=0;step<6;step++){let res;try{res=await fetch(GAPI+'models/'+encodeURIComponent(gemModel())+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gemKey()},body:JSON.stringify({contents,tools})})}catch(e){throw {code:'network'}}
-  if(!res.ok)throw await gemFail(res);const j=await res.json();const cand=(j.candidates||[])[0]||{};const content=cand.content||{role:'model',parts:[]};const parts=content.parts||[];
+  if(!res.ok){const er=await gemFail(res);if(step===0&&er.status===400&&er.code==='http'){console.warn('tools rejected',er);return gemini(input,{...x,tools:undefined})}throw er}const j=await res.json();const cand=(j.candidates||[])[0]||{};const content=cand.content||{role:'model',parts:[]};const parts=content.parts||[];
   const calls=parts.filter(p=>p&&p.functionCall);const text=parts.filter(p=>p&&p.text&&!p.thought).map(p=>p.text).join('');
   if(!calls.length){if(x.onText)x.onText({text,delta:text});return {text}}
   contents.push({role:'model',parts});const resp=[];
@@ -932,6 +952,9 @@ ${notes.length?'- 食事ごとの要望（最優先で守る）: '+notes.join(' 
  shopOpen:v=>{S.shop=v||today();renderShop();try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(l=>{S.wl=l}).catch(()=>{})}catch(e){}},
  shopClose:()=>{S.shop=null;renderShop();try{S.wl&&S.wl.release()}catch(e){}S.wl=null;render()},
  shopAdd:()=>{const el=$('#shopAdd');const v=el&&el.value.trim();if(!v)return;addShopItem({name:v},S.shop);toast(`「${v}」を追加しました`);setTimeout(()=>{const e2=$('#shopAdd');e2&&e2.focus()},50)},
+ shareOpen:()=>{S.shareOpt=S.shareOpt||{soon:true,list:false};renderShare()},
+ doShare:()=>{const txt=($('#shareText')||{}).value||shareText(S.shareOpt);try{navigator.share({title:'冷蔵庫の中身',text:txt}).then(()=>{closeSheet();toast('共有しました')}).catch(e=>{if(e&&e.name!=='AbortError')A.doCopy()})}catch(e){A.doCopy()}},
+ doCopy:()=>{const txt=($('#shareText')||{}).value||shareText(S.shareOpt);try{navigator.clipboard.writeText(txt).then(()=>toast('コピーしました。LINEなどに貼り付けて送れます'),()=>toast('コピーできませんでした。文章を長押ししてコピーしてください'))}catch(e){toast('コピーできませんでした。文章を長押ししてコピーしてください')}},
  aisleOpen:()=>{if(!$('#sheet').hidden)closeSheet();S.aisleTmp=aisle();renderAisle()},
  aMove:(v,b)=>{const i=+v,d=+b.dataset.d,o=S.aisleTmp,j=i+d;if(j<0||j>=o.length)return;[o[i],o[j]]=[o[j],o[i]];renderAisle()},
  aisleReset:()=>{S.aisleTmp=[...AISLE_DEFAULT];renderAisle()},
@@ -961,6 +984,7 @@ function onIn(e){const t=e.target;
  if(t.dataset.rf!==undefined&&R){const it=R.items[+t.dataset.ri];if(!it)return;it[t.dataset.rf]=t.type==='checkbox'?t.checked:t.value;if(t.dataset.rf==='price'||t.dataset.rf==='qty')updTotal();return}
  if(t.dataset.rh&&R){R[t.dataset.rh]=t.value;return}
  if(t.dataset.ff&&F){F[t.dataset.ff]=t.value;if(t.dataset.ff==='cat'&&F._new&&e.type==='change'){F.zone=zoneOf(t.value,'');F.exp=addD(F.added||today(),SHELF[t.value]||7);renderF()}return}
+ if(t.dataset.sh&&S.shareOpt){if(e.type==='change'){S.shareOpt[t.dataset.sh]=t.checked;renderShare()}return}
  if(t.dataset.pn!==undefined){if(e.type==='change'){const mn={...(settings().mealNotes||{})};mn[t.dataset.pn]=t.value.trim();setS({mealNotes:mn})}return}
  if(t.dataset.pnote){if(e.type==='change')setS({planNote:t.value.trim()});return}
  if(t.dataset.tf&&T){T[t.dataset.tf]=t.type==='checkbox'?t.checked:t.value;return}
