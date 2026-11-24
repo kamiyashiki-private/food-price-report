@@ -165,6 +165,10 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--ac);margin:0;flex
 .amv{width:40px;height:40px;color:var(--sub)}.amv:disabled{opacity:.25}
 .grip{width:44px;height:44px;display:grid;place-items:center;color:var(--sub);cursor:grab;touch-action:none;flex:none}
 .seg2 button{min-height:52px;display:grid;place-items:center;align-content:center;line-height:1.25;font-size:15px}.seg2 small{font-size:12px;color:var(--sub);font-weight:400}
+.mealr{gap:10px}.mbtn{border:0;background:none;text-align:left;padding:0;color:inherit;font:inherit;min-height:44px;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.cookb{flex:none;min-height:40px;padding:0 14px;border-radius:99px;border:1.5px solid var(--ac);color:var(--ac);background:none;font-size:14px;font-weight:600;white-space:nowrap}
+.cookb[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}.cookb:disabled{opacity:.6}
+.mealr:has(.cookb[aria-pressed=true]) .t1{color:var(--sub)}
 /* plan */
 .meal-s{width:2.4em;font-size:13px;font-weight:600;color:var(--sub);flex:none}
 .step{display:flex;align-items:center;gap:6px;margin-left:auto}.step button{width:40px;height:40px;border-radius:10px;border:0;background:var(--fill);font-size:20px;color:var(--ink);padding:0}
@@ -542,12 +546,34 @@ V.plan=()=>{
  ${S.planBusy?'<div class="loading"><div class="spin"></div><span class="sub small">献立を作成しています</span></div>':''}
  ${pl&&!S.planBusy?planHTML(pl):''}`};
 const slotName=s=>s==='朝'?'朝食':s==='昼'?'昼食':s==='夜'?'夕食':s;
+function cookBtn(date,m){const k=date+'|'+m.slot,busy=S.cooking===k;return `<button class="cookb" data-act="cooked" data-v="${esc(k)}" aria-pressed="${!!m.cooked}" ${busy?'disabled':''}>${busy?'記録中…':m.cooked?'✓ 作った':'作った'}</button>`}
+function cookGuess(m,people,fr){const uses=(m.uses||[]).map(norm).filter(Boolean),name=norm(m.name);
+ return fr.filter(f=>{const n=norm(f.name);return uses.some(u=>u&&(u.includes(n)||n.includes(u)))||(n.length>=2&&name.includes(n))})
+  .filter(f=>f.cat!=='調味料').map(f=>{const q=Math.max(1,+f.qty||1),use=clamp(people/q,.25,1);return {id:f.id,left:Math.max(0,r1((+f.left||1)-use))}})}
+async function cookMeal(key){const [date,slot]=key.split('|');const pl=cl(get('plan'));const d=pl&&(pl.days||[]).find(x=>x.date===date);const m=d&&(d.meals||[]).find(x=>x.slot===slot);if(!m)return;
+ if(m.cooked){const log=m.cookLog||[],fr=cl(fridge());for(const c of log){const i=fr.findIndex(f=>f.id===c.before.id);i<0?fr.push(c.before):(fr[i]=c.before)}setFridge(fr);
+  if(log.some(c=>c.finished)){const ev=cl(history());const names=log.filter(c=>c.finished).map(c=>c.before.name);for(let i=ev.length-1;i>=0&&names.length;i--){const j=names.indexOf(ev[i].name);if(j>=0&&ev[i].end===today()){ev.splice(i,1);names.splice(j,1)}}put('history',{events:ev})}
+  m.cooked=false;delete m.cookLog;put('plan',pl);toast(`「${m.name}」の記録を取り消し、食材を戻しました`);return}
+ const fr=fridge(),people=+pl.people||+settings().people||1;if(!fr.length){m.cooked=true;m.cookLog=[];put('plan',pl);toast('冷蔵庫に食材が登録されていないため、作った記録だけ付けました');return}
+ S.cooking=key;render();let used=null;
+ if(aiOn()){try{const r=await ai(`料理「${m.name}」を${people}人分作りました。冷蔵庫の食材のうち、この料理で実際に使ったものと、使った後の残量を推定して、JSONだけを返してください（前後に文章やコードブロックを付けない）。
+献立で使う予定だった食材: ${(m.uses||[]).join('、')||'不明'}
+冷蔵庫: ${fr.map(f=>`[id:${f.id}] ${f.name}（${f.cat}・${fmtQ(f.qty,f.unit)}・いまの残り${Math.round((+f.left||0)*100)}%）`).join(' / ')}
+ルール: この料理に使うものだけを入れる。数量と人数から使った量を見積もる。調味料・油など1回で目に見えて減らないものは入れない。left は使った後の残量（0〜1、0＝使い切り）。
+形式: {"used":[{"id":"冷蔵庫のid","left":0.5}]}`,{json:true});const j=parseJSON(r.text);if(Array.isArray(j.used))used=j.used.filter(u=>u&&fr.some(f=>f.id===u.id)).map(u=>({id:String(u.id),left:clamp(+u.left||0,0,1)}))}catch(e){console.warn(e)}}
+ if(!used)used=cookGuess(m,people,fr);
+ const cur=cl(fridge()),log=[],msgs=[];
+ for(const u of used){const i=cur.findIndex(f=>f.id===u.id);if(i<0)continue;const before=cl(cur[i]);if(u.left>=(+before.left||1)-.01)continue;
+  if(u.left<=.05){cur.splice(i,1);log.push({before,finished:true});msgs.push(before.name+'（使い切り）')}else{cur[i].left=r1(u.left)||.1;log.push({before});msgs.push(`${before.name}（残り${u.left>=.75?'たっぷり':u.left>=.4?'半分':'少し'}）`)}}
+ setFridge(cur);for(const c of log)if(c.finished)logEnd(c.before,false);
+ const pl2=cl(get('plan')),m2=(((pl2.days||[]).find(x=>x.date===date)||{}).meals||[]).find(x=>x.slot===slot);if(m2){m2.cooked=true;m2.cookLog=log;put('plan',pl2)}
+ S.cooking=null;render();toast(msgs.length?'冷蔵庫から減らしました：'+msgs.join('、'):'冷蔵庫に当てはまる食材が見つからなかったので、作った記録だけ付けました')}
 function shopRow(x){return `<label class="r wrap${x.done?' done':''}"><input type="checkbox" data-act="sChk" data-v="${esc(x.key)}" ${x.done?'checked':''}><span class="m"><span class="t1">${esc(x.name)}</span>${x.why?`<span class="t2">${esc(x.why)}</span>`:''}</span><span class="v" style="text-align:right">${esc(fmtQ(x.qty,x.unit))}${x.price?`<br><span class="small">${yen(x.price)}</span>`:''}</span></label>`}
 function planHTML(pl){const items=shopItems().plan,total=items.reduce((a,i)=>a+i.price,0),left=items.filter(i=>!i.done);
  return `<h2 class="gh"><span>${esc(md((pl.start&&pl.start.date)||pl.created))}からの献立</span><span>${esc((MODES[pl.mode]||{}).n||'')}・${esc(pl.people)}人</span></h2>
  ${pl.summary||pl.nutrition?`<section class="group"><div class="adv">${esc([pl.summary,pl.nutrition].filter(Boolean).join('\n'))}</div></section>`:''}
- ${(pl.days||[]).map(d=>`<h2 class="gh"><span>${esc(md(d.date))}${d.date===today()?'　今日':''}</span></h2><section class="group">${(d.meals||[]).map(m=>`<button class="r wrap" data-act="cook" data-v="${esc(m.name)}"><span class="meal-s">${esc(slotName(m.slot))}</span><span class="m"><span class="t1">${esc(m.name)}</span><span class="t2">${esc([m.minutes?m.minutes+'分':'',(m.uses||[]).length?(m.uses||[]).join('、'):'',m.tip].filter(Boolean).join(' ・ '))}</span></span><i class="chev"></i></button>`).join('')}</section>`).join('')}
- <p class="foot">料理をタップすると、アシスタントに作り方を聞けます。</p>
+ ${(pl.days||[]).map(d=>`<h2 class="gh"><span>${esc(md(d.date))}${d.date===today()?'　今日':''}</span></h2><section class="group">${(d.meals||[]).map(m=>`<div class="r wrap mealr"><span class="meal-s">${esc(slotName(m.slot))}</span><button class="m mbtn" data-act="cook" data-v="${esc(m.name)}"><span class="t1">${esc(m.name)}</span><span class="t2">${esc([m.minutes?m.minutes+'分':'',(m.uses||[]).length?(m.uses||[]).join('、'):'',m.tip].filter(Boolean).join(' ・ '))}</span></button>${cookBtn(d.date,m)}</div>`).join('')}</section>`).join('')}
+ <p class="foot">料理名をタップすると作り方を聞けます。作ったら「作った」を押すと、使った食材を冷蔵庫から減らします（もう一度押すと取り消し）。</p>
  <h2 class="gh"><span>買い物リスト${pl.shopDate?'（'+esc(md(pl.shopDate))+'）':''}</span><span>想定 <b class="num" style="color:var(--ink)">${yen(total)}</b></span></h2>
  ${items.length?groupAisle(items).map(([c,g])=>`<p class="aisle-h">${esc(c)}</p><section class="group">${g.map(shopRow).join('')}</section>`).join(''):'<section class="group"><div class="r"><span class="m sub">冷蔵庫のもので足りそうです</span></div></section>'}
  <p class="foot">${pl.budget?`今回の予算の目安 ${yen(pl.budget)}（今月の残り予算から計算）に対して、想定は ${yen(total)} です。`:''}残り${left.length}品。並びは売り場の順番です。</p>
@@ -569,7 +595,7 @@ V.cal=()=>{
  if(tr){if(isNextPlan)rows.push(`<button class="r" data-act="go" data-v="plan"><span class="m"><span class="t1" style="color:var(--ac)">次の献立を作る日</span><span class="t2">この日からの献立を作ると、買い物リストが入ります</span></span><i class="chev"></i></button>`);
   rows.push(...(tr.items.length?byAisle(tr.items).map(shopRow):['<div class="r"><span class="m sub">買い足しが必要なものはまだありません</span></div>']))}
  rsD.forEach(r=>rows.push(`<button class="r" data-act="openR" data-v="${esc(r.id)}"><span class="m"><span class="t1">${esc(r.store||'お店')}</span><span class="t2">${esc(r.time||'')} の買い物</span></span><span class="v b">${yen(r.total)}</span><i class="chev"></i></button>`));
- (meals[sel]||[]).forEach(x=>rows.push(`<div class="r"><span class="meal-s">${esc(slotName(x.slot))}</span><span class="m"><span class="t1">${esc(x.name)}</span></span></div>`));
+ (meals[sel]||[]).forEach(x=>rows.push(`<div class="r mealr"><span class="meal-s">${esc(slotName(x.slot))}</span><span class="m"><span class="t1">${esc(x.name)}</span></span>${cookBtn(sel,x)}</div>`));
  (exp[sel]||[]).forEach(f=>rows.push(`<div class="r"><span class="m"><span class="t1">${esc(f.name)}</span></span><span class="badge b-warn">期限</span></div>`));
  const st=Object.values(stats()).filter(s=>s.buyDates.length).sort((a,b)=>b.buyDates.length-a.buyDates.length||(b.ends-a.ends)).slice(0,12);
  return `<section class="group pad"><div class="calh"><button class="ib" data-act="cPrev" aria-label="前の月">${IC2.L}</button><b>${y}年${m}月</b><button class="ib" data-act="cNext" aria-label="次の月">${IC2.R}</button></div>
@@ -609,6 +635,7 @@ function ctx(){return `あなたは食費管理・冷蔵庫管理アプリ「食
 - 返答は短く、基本3〜6行。料理の手順は1〜2ステップずつ出し、「次は？」と聞かれたら続きを出す
 - 火加減・時間・分量は具体的な数字で。生焼け・油の発火・食中毒など安全に関わることははっきり注意
 - アプリの情報（下のデータ）について聞かれたら、データにもとづいて正確に答える。データにないことは推測だと言う
+- ユーザーが「〇〇を作った」「〇〇を使った」と言ったら、使った食材を冷蔵庫から減らす（残るものは update_fridge_item の remaining、使い切ったものは remove_fridge_item の used）
 - 設定・冷蔵庫・買い物リスト・献立・支出の記録を変える操作は、ユーザーが頼んだときだけツールで行う。頼まれていない変更はしない。対象があいまいなら先に確認する。実行したら何を変えたかを一言で伝える
 - 見出しや#・**などのマークダウン記法は使わずプレーンテキストで
 【アプリのデータ】
@@ -897,6 +924,7 @@ ${notes.length?'- 食事ごとの要望（最優先で守る）: '+notes.join(' 
    toast(shopping.length?`献立ができました。${md(shopDate)}の買い物リストに入れました`:'献立ができました')}
   catch(e){S.planBusy=false;render();if(e&&e.code)aiErr(e);else toast('うまく作れませんでした。日数を減らしてもう一度お試しください')}},
  sChk:v=>toggleItem(v),
+ cooked:v=>{if(S.cooking)return;cookMeal(v).catch(e=>{S.cooking=null;render();console.warn(e);toast('うまく記録できませんでした')})},
  cook:v=>{S.draft=`「${v}」を作ります。材料と最初の手順を教えて`;A.go('chat')},
  selD:v=>{S.selDate=v;S.calMonth=v.slice(0,7);render()},
  copyTrip:v=>{const x=suggest().trips.find(t=>t.date===v);if(!x)return;const txt=`${md(v)} の買い物\n`+groupAisle(x.items.filter(i=>!i.done)).map(([c,g])=>`【${c}】\n`+g.map(i=>`・${i.name} ${fmtQ(i.qty,i.unit)}`).join('\n')).join('\n');
