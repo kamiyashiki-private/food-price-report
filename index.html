@@ -269,12 +269,18 @@ function stats(){
 function trips(){
  const set=settings(),t=today();const rs=[...new Set(receipts().map(r=>r.date).filter(isDate))].sort();
  const gaps=rs.slice(1).map((d,i)=>diffD(rs[i],d)).filter(x=>x>0);const iv=clamp(Math.round(avg(gaps.slice(-6)))||4,2,14);
- let dates=[];const start=rs.includes(t)?addD(t,1):t;
- if(set.days&&set.days.length){for(let i=0;i<28&&dates.length<3;i++){const x=addD(start,i);if(set.days.includes(pd(x).getDay()))dates.push(x)}}
+ let dates=[];const start=rs.includes(t)?addD(t,1):t;const freq=+set.freq||0,wd=set.days||[];
+ if(freq){const fiv=clamp(Math.round(30/freq),1,30),want=Math.min(16,Math.max(3,Math.ceil(42/fiv)));const last=rs[rs.length-1];
+  let c=last?addD(last,fiv):start;if(c<start)c=start;
+  for(let k=0;k<want;k++){const min=dates.length?addD(dates[dates.length-1],1):start;let d=c<min?min:c;
+   if(wd.length){const offs=[0,1,-1,2,-2,3,-3,4,5,6];const hit=offs.map(o=>addD(d,o)).find(x=>x>=min&&wd.includes(pd(x).getDay()));if(hit)d=hit}
+   dates.push(d);c=addD(d,fiv)}
+  return {iv:fiv,dates,learned:gaps.length>0,freq}}
+ if(wd.length){for(let i=0;i<28&&dates.length<3;i++){const x=addD(start,i);if(wd.includes(pd(x).getDay()))dates.push(x)}}
  else{const last=rs[rs.length-1];let first=last?addD(last,iv):start;if(first<start)first=start;dates=[first,addD(first,iv),addD(first,iv*2)]}
- return {iv,dates,learned:gaps.length>0}}
+ return {iv,dates,learned:gaps.length>0,freq:0}}
 function suggest(){
- const st=stats(),{iv,dates,learned}=trips(),t=today();const out=dates.map(d=>({date:d,items:[]}));const seen=new Set();
+ const st=stats(),{iv,dates,learned,freq}=trips(),t=today();const out=dates.map(d=>({date:d,items:[]}));const seen=new Set();
  const qtyFor=s=>{let q=s.q;if(s.wasteRate>=.3)q=Math.max(1,Math.round(q*.7));return q};
  const whyFor=(s,need)=>[s.dur?`平均${r1(s.dur)}日で使い切り`:'',s.interval?`約${Math.round(s.interval)}日ごとに購入`:'',s.wasteRate>=.3?'捨てがちなので少なめ':'',`${md(need)}頃なくなる見込み`].filter(Boolean).join('・');
  const place=it=>{for(let k=0;k<out.length;k++){const next=dates[k+1]||addD(dates[k],iv);if(it.need<next){out[k].items.push(it);return}}};
@@ -283,8 +289,8 @@ function suggest(){
   seen.add(n);place({n,name:f.name,need,qty:qtyFor(s),unit:s.unit||f.unit||'',price:s.price,why:whyFor(s,need)})}
  const inFr=new Set(fridge().map(f=>norm(f.name)));
  for(const s of Object.values(st)){if(seen.has(s.n)||inFr.has(s.n)||s.buyDates.length<2||!s.interval||!s.last)continue;const need=addD(s.last,Math.round(s.interval));if(diffD(need,t)>s.interval*2)continue;seen.add(s.n);place({n:s.n,name:s.name,need,qty:qtyFor(s),unit:s.unit,price:s.price,why:whyFor(s,need)})}
- const pl=get('plan');if(pl&&out[0])for(const x of pl.shopping||[]){const n=norm(x.name);if(x.done||seen.has(n))continue;seen.add(n);out[0].items.push({n,name:x.name,qty:x.qty,unit:x.unit||'',plan:true,why:'献立用'+(x.why?'：'+x.why:'')})}
- return {iv,dates,learned,trips:out}}
+ const pl=get('plan');if(pl&&out[0])for(const x of pl.shopping||[]){const n=norm(x.name);if(x.done||seen.has(n))continue;seen.add(n);let k=isDate(x.date)?out.findIndex(o=>o.date>=x.date):0;if(k<0)k=out.length-1;out[k].items.push({n,name:x.name,qty:x.qty,unit:x.unit||'',plan:true,why:'献立用'+(x.why?'：'+x.why:'')})}
+ return {iv,dates,learned,freq,trips:out}}
 
 /* ---------- AI ---------- */
 function parseJSON(t){const s=String(t||'');const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a<0||b<a)throw new Error('JSONが見つかりません');return JSON.parse(s.slice(a,b+1))}
@@ -340,6 +346,7 @@ const IC2={plus:'<svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/>
  up:'<svg class="i" viewBox="0 0 24 24" style="width:20px;height:20px;stroke-width:2.4"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
  L:'<svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',R:'<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'};
 const CATCOL={'野菜':'#34c759','果物':'#ff9f0a','肉':'#ff453a','魚':'#0a84ff','卵・乳製品':'#e6b800','豆腐・大豆':'#bf9b6f','主食':'#a2845e','調味料':'#5e5ce6','冷凍食品':'#64d2ff','惣菜':'#ff6a43','飲料':'#30b0c7','菓子':'#ff375f','日用品':'#8e8e93','その他':'#aeaeb2'};
+const FREQS=[[0,'自動（記録から予測）'],[2,'月2回'],[3,'月3回'],[4,'月4回（週1回）'],[6,'月6回'],[8,'月8回（週2回）'],[12,'月12回（週3回）'],[16,'月16回（週4回）']];
 const MEALS=[['朝','朝食'],['昼','昼食'],['夜','夕食']];
 const TITLES={home:'家計',fridge:'冷蔵庫',plan:'献立',cal:'カレンダー',chat:'アシスタント'};
 const shortYen=a=>a>=10000?r1(a/10000)+'万':Math.round(a).toLocaleString('ja-JP');
@@ -388,11 +395,11 @@ V.fridge=()=>{
  ${body}
  <p class="foot" style="margin-top:12px">食材をタップすると、残りの量の変更や「使い切った」の記録ができます。</p>`};
 V.plan=()=>{
- const set=settings();if(!S.po)S.po={mode:set.mode||'balance',days:5,meals:Array.isArray(set.meals)&&set.meals.length?[...set.meals]:['朝','昼','夜'],people:+set.people||1};const o=S.po,pl=get('plan');
+ const set=settings();if(!S.po)S.po={mode:set.mode||'balance',days:+set.freq?'trip':5,meals:Array.isArray(set.meals)&&set.meals.length?[...set.meals]:['朝','昼','夜'],people:+set.people||1};const o=S.po,pl=get('plan');
  const seg=(k,vals)=>`<div class="segc">${vals.map(([v,n])=>`<button data-act="po" data-k="${k}" data-v="${v}" aria-pressed="${String(o[k])===String(v)}">${n}</button>`).join('')}</div>`;
  return `<h2 class="gh">自炊のレベル</h2><section class="group pad">${seg('mode',Object.entries(MODES).map(([k,m])=>[k,m.n]))}<p class="small sub" style="margin:10px 2px 0">${esc(MODES[o.mode].d)}</p></section>
  <h2 class="gh">条件</h2><section class="group">
-  <div class="fr"><span>期間</span>${seg('days',[[3,'3日'],[5,'5日'],[7,'7日']])}</div>
+  <div class="fr"><span>期間</span>${seg('days',[...(+set.freq?[['trip',`買い物${tripSpan().n}日分`]]:[]),[3,'3日'],[5,'5日'],[7,'7日']])}</div>
   <div class="fr"><span>食事</span><div class="segc">${MEALS.map(([v,n])=>`<button data-act="pm" data-v="${v}" aria-pressed="${o.meals.includes(v)}">${n}</button>`).join('')}</div></div>
   <div class="fr"><span>人数</span><div class="step"><button data-act="pp" data-v="-1" aria-label="減らす">−</button><b>${o.people}人</b><button data-act="pp" data-v="1" aria-label="増やす">＋</button></div></div>
  </section>
@@ -401,14 +408,20 @@ V.plan=()=>{
  ${aiNote()}
  ${S.planBusy?'<div class="loading"><div class="spin"></div><span class="sub small">献立を作成しています</span></div>':''}
  ${pl&&!S.planBusy?planHTML(pl):''}`};
+function tripSpan(){const {dates,iv}=trips(),t=today();const end=dates[1]||addD(dates[0]||t,iv);return {n:clamp(diffD(t,end),1,14)}}
+const planDays=o=>o.days==='trip'?tripSpan().n:+o.days||5;
 function planHTML(pl){const sh=pl.shopping||[];
  return `<h2 class="gh"><span>${esc(md(pl.created))}からの献立</span><span>${esc((MODES[pl.mode]||{}).n||'')}・${esc(pl.people)}人</span></h2>
  ${pl.summary||pl.nutrition?`<section class="group"><div class="adv">${esc([pl.summary,pl.nutrition].filter(Boolean).join('\n'))}</div></section>`:''}
  ${(pl.days||[]).map(d=>`<h2 class="gh"><span>${esc(md(d.date))}${d.date===today()?'　今日':''}</span></h2><section class="group">${(d.meals||[]).map(m=>`<button class="r wrap" data-act="cook" data-v="${esc(m.name)}"><span class="meal-s">${esc(m.slot==='朝'?'朝食':m.slot==='昼'?'昼食':m.slot==='夜'?'夕食':m.slot)}</span><span class="m"><span class="t1">${esc(m.name)}</span><span class="t2">${esc([m.minutes?m.minutes+'分':'',(m.uses||[]).length?(m.uses||[]).join('、'):'',m.tip].filter(Boolean).join(' ・ '))}</span></span><i class="chev"></i></button>`).join('')}</section>`).join('')}
  <p class="foot">料理をタップすると、アシスタントに作り方を聞けます。</p>
  <h2 class="gh"><span>買い物リスト</span><span>残り${sh.filter(x=>!x.done).length}品</span></h2>
- <section class="group">${sh.map((x,i)=>`<label class="r wrap${x.done?' done':''}"><input type="checkbox" data-act="pBuy" data-v="${i}" ${x.done?'checked':''}><span class="m"><span class="t1">${esc(x.name)}</span>${x.why?`<span class="t2">${esc(x.why)}</span>`:''}</span><span class="v">${esc(fmtQ(x.qty,x.unit))}</span></label>`).join('')||'<div class="r"><span class="m sub">冷蔵庫のもので足りそうです</span></div>'}</section>
- <p class="foot">チェックしていないものは、カレンダーの次の買い物日に入ります。</p>`}
+ ${(()=>{const row=(x,i)=>`<label class="r wrap${x.done?' done':''}"><input type="checkbox" data-act="pBuy" data-v="${i}" ${x.done?'checked':''}><span class="m"><span class="t1">${esc(x.name)}</span>${x.why?`<span class="t2">${esc(x.why)}</span>`:''}</span><span class="v">${esc(fmtQ(x.qty,x.unit))}</span></label>`;
+  if(!sh.length)return '<section class="group"><div class="r"><span class="m sub">冷蔵庫のもので足りそうです</span></div></section>';
+  const ds=[...new Set(sh.map(x=>isDate(x.date)?x.date:''))].sort((a,b)=>(a||'9').localeCompare(b||'9'));
+  if(ds.length===1&&!ds[0])return `<section class="group">${sh.map(row).join('')}</section>`;
+  return ds.map(d=>`<p class="foot" style="margin-top:12px;margin-bottom:6px">${d?esc(md(d))+'に買う':'日付なし'}</p><section class="group">${sh.map((x,i)=>[x,i]).filter(([x])=>(isDate(x.date)?x.date:'')===d).map(([x,i])=>row(x,i)).join('')}</section>`).join('')})()}
+ <p class="foot">チェックしていないものは、カレンダーのそれぞれの買い物日に入ります。</p>`}
 V.cal=()=>{
  const sg=suggest(),[y,m]=S.calMonth.split('-').map(Number),first=new Date(y,m-1,1),start=first.getDay(),dim=new Date(y,m,0).getDate(),t=today();
  const rsum={};receipts().forEach(r=>{if(isDate(r.date))rsum[r.date]=(rsum[r.date]||0)+(+r.total||0)});
@@ -421,7 +434,7 @@ V.cal=()=>{
   cells+=`<button class="${cls}" data-act="selD" data-v="${d}" aria-label="${m}月${n}日"><span class="n">${n}</span><span class="a">${a?shortYen(a):''}</span><span class="d">${trip.has(d)?'<i class="g"></i>':''}${exp[d]?'<i class="y"></i>':''}${meals[d]?'<i class="p"></i>':''}</span></button>`}
  const tr=sg.trips.find(x=>x.date===sel),rsD=receipts().filter(r=>r.date===sel);
  const est=x=>x.items.reduce((a,i)=>a+(+i.price||0),0);
- const rows=[];
+ const rows=[],setC=settings(),perTrip=+setC.budget&&sg.freq?setC.budget/sg.freq:0;
  if(tr)rows.push(...(tr.items.length?tr.items.map(it=>{const k=tr.date+'|'+it.name,ck=!!S.checks[k];return `<label class="r wrap${ck?' done':''}"><input type="checkbox" data-act="tchk" data-v="${esc(k)}" ${ck?'checked':''}><span class="m"><span class="t1">${esc(it.name)}</span><span class="t2">${esc(it.why)}</span></span><span class="v">${esc(fmtQ(it.qty,it.unit))}</span></label>`}):['<div class="r"><span class="m sub">買い足しが必要なものはまだありません</span></div>']));
  rsD.forEach(r=>rows.push(`<button class="r" data-act="openR" data-v="${esc(r.id)}"><span class="m"><span class="t1">${esc(r.store||'お店')}</span><span class="t2">${esc(r.time||'')} の買い物</span></span><span class="v b">${yen(r.total)}</span><i class="chev"></i></button>`));
  (meals[sel]||[]).forEach(x=>rows.push(`<div class="r"><span class="meal-s">${esc(x.slot==='朝'?'朝食':x.slot==='昼'?'昼食':x.slot==='夜'?'夕食':x.slot)}</span><span class="m"><span class="t1">${esc(x.name)}</span></span></div>`));
@@ -430,12 +443,12 @@ V.cal=()=>{
  return `<section class="group pad"><div class="calh"><button class="ib" data-act="cPrev" aria-label="前の月">${IC2.L}</button><b>${y}年${m}月</b><button class="ib" data-act="cNext" aria-label="次の月">${IC2.R}</button></div>
  <div class="cal">${[...WD].map(w=>`<span class="wd">${w}</span>`).join('')}${cells}</div>
  <div class="legend"><span><i class="g"></i>買い物予定</span><span><i class="y"></i>期限</span><span><i class="p"></i>献立</span><span>数字は使った金額</span></div></section>
- <h2 class="gh"><span>${esc(md(sel))}${sel===t?'　今日':''}${tr?'　買い物予定':''}</span>${tr?`<span>目安 ${yen(est(tr))}</span>`:''}</h2>
+ <h2 class="gh"><span>${esc(md(sel))}${sel===t?'　今日':''}${tr?'　買い物予定':''}</span>${tr?`<span>目安 ${yen(est(tr))}${perTrip?' / 予算 '+yen(perTrip):''}</span>`:''}</h2>
  <section class="group">${rows.join('')||'<div class="r"><span class="m sub">予定はありません</span></div>'}</section>
  ${tr&&tr.items.length?`<div style="margin-top:12px"><button class="btn sec" data-act="copyTrip" data-v="${tr.date}">買い物リストをコピー</button></div>`:''}
  <h2 class="gh">これからの買い物</h2>
  <section class="group">${sg.trips.map(x=>`<button class="r" data-act="selD" data-v="${x.date}"><span class="m"><span class="t1">${esc(md(x.date))}</span><span class="t2">${x.items.length?x.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しなし'}</span></span><span class="v">${x.items.length}品${est(x)?' ・ '+yen(est(x)):''}</span><i class="chev"></i></button>`).join('')}</section>
- <p class="foot">${sg.learned?`これまでの買い物の間隔：約${sg.iv}日。`:'レシートが2回分たまると、買い物の間隔を学習します。'}${settings().days.length?'設定した曜日に合わせています。':'設定で曜日を選ぶと、その曜日に合わせます。'}</p>
+ <p class="foot">${sg.freq?`月${sg.freq}回（約${sg.iv}日ごと）の設定で予定を立てています。${perTrip?`1回の予算の目安は${yen(perTrip)}です。`:''}`:sg.learned?`これまでの買い物の間隔：約${sg.iv}日。`:'レシートが2回分たまると、買い物の間隔を学習します。'}${setC.days.length?'行ける曜日に合わせています。':'設定で頻度や曜日を決めると、それに合わせます。'}</p>
  <h2 class="gh">学習データ</h2>
  <section class="group">${st.length?`<table class="learn"><thead><tr><th>食材</th><th>使い切り</th><th>購入間隔</th><th>廃棄</th></tr></thead><tbody>${st.map(s=>`<tr><td>${esc(s.name)}</td><td>${s.dur?r1(s.dur)+'日':'—'}</td><td>${s.interval?Math.round(s.interval)+'日':'—'}</td><td>${s.ends?Math.round(s.wasteRate*100)+'%':'—'}</td></tr>`).join('')}</tbody></table>`:'<div class="r"><span class="m sub">記録が増えると表示されます</span></div>'}</section>
  <p class="foot">冷蔵庫で「使い切った」「捨てた」を記録するほど、提案の精度が上がります。</p>`};
@@ -556,8 +569,11 @@ function renderT(){if(!T)return;openSheet('設定',`<h2 class="gh">基本</h2><s
   <button class="r" data-act="exportData"><span class="m" style="color:var(--ac)">バックアップを書き出す</span></button>
   <button class="r" data-act="importOpen"><span class="m" style="color:var(--ac)">バックアップを読み込む</span></button></section>
  <p class="foot">別の端末や、claude.ai版とアプリ版の間でデータを移せます。</p>
- <h2 class="gh">買い物に行く曜日</h2><div class="segc">${[...WD].map((w,i)=>`<button data-act="tDay" data-v="${i}" aria-pressed="${T.days.includes(i)}">${w}</button>`).join('')}</div>
- <p class="foot">選ばない場合は、これまでの買い物の間隔から予測します。</p>`,['保存','tSave'])}
+ <h2 class="gh">買い物</h2><section class="group">
+  <label class="fr"><span>頻度</span><select data-tf="freq">${FREQS.map(([v,n])=>`<option value="${v}"${+T.freq===v?' selected':''}>${n}</option>`).join('')}</select></label></section>
+ <p class="foot">カレンダーの買い物予定日と、献立の買い物リストの振り分けに使います。</p>
+ <h2 class="gh">行ける曜日</h2><div class="segc">${[...WD].map((w,i)=>`<button data-act="tDay" data-v="${i}" aria-pressed="${T.days.includes(i)}">${w}</button>`).join('')}</div>
+ <p class="foot">${+T.freq?'頻度の間隔に近い、選んだ曜日に予定を入れます。':'選ばない場合は、これまでの買い物の間隔から予測します。'}</p>`,['保存','tSave'])}
 
 function renderImport(){openSheet('バックアップの読み込み',`<p class="foot" style="margin:8px 16px 0">書き出したファイルを選ぶか、コピーした内容を貼り付けてください。</p>
  <h2 class="gh">ファイル</h2><section class="group"><label class="r filebtn" style="position:relative"><span class="m" style="color:var(--ac)">ファイルを選ぶ</span><input type="file" accept=".json,application/json,text/plain" id="importFile"></label></section>
@@ -605,7 +621,7 @@ const A={
   const fr=cl(fridge());const i=fr.findIndex(x=>x.id===f.id);i<0?fr.push(f):(fr[i]=f);setFridge(fr);closeSheet()},
  fEnd:async v=>{const f=F;closeSheet();setFridge(fridge().filter(x=>x.id!==f.id));await logEnd(f,v==='1');toast(v==='1'?'記録しました。次からは少なめに提案します':`${f.name}：${Math.max(1,diffD(f.added,today()))}日で使い切り。学習しました`)},
  fDel:()=>{const f=F;closeSheet();setFridge(fridge().filter(x=>x.id!==f.id))},
- settings:()=>{const s=settings();T={budget:s.budget,people:s.people,mode:s.mode,model:s.model||'',days:[...(s.days||[])],gkey:gemKey(),gmodel:gemModel(),gmodels:gemList()};renderT()},
+ settings:()=>{const s=settings();T={freq:+s.freq||0,budget:s.budget,people:s.people,mode:s.mode,model:s.model||'',days:[...(s.days||[])],gkey:gemKey(),gmodel:gemModel(),gmodels:gemList()};renderT()},
  gTest:async()=>{if(!T)return;const key=String(T.gkey||'').trim();if(!key){toast('APIキーを入力してください');return}T.gBusy=true;renderT();
   try{const l=await gemModels(key);if(!T)return;T.gmodels=l;lsSet(GL,JSON.stringify(l));if(!l.includes(T.gmodel))T.gmodel=bestModel(l);
    await gemini('「OK」とだけ返してください',{},key,T.gmodel);toast(`接続できました（${T.gmodel}）`)}
@@ -622,30 +638,32 @@ const A={
   else{S.docs=cl(docs);saveLocal();render()}
   toast(`${Object.keys(docs).filter(k=>k.startsWith('r_')).length}件のレシートを含むデータを読み込みました`)},
  tDay:v=>{const n=+v;T.days=T.days.includes(n)?T.days.filter(x=>x!==n):[...T.days,n].sort();renderT()},
- tSave:()=>{if(!inClaude){lsSet(GK,String(T.gkey||'').trim());lsSet(GM,T.gmodel||'')}put('settings',{budget:Math.max(0,Math.round(+T.budget)||0),people:clamp(Math.round(+T.people)||1,1,12),mode:MODES[T.mode]?T.mode:'balance',model:MODELS.some(m=>m[0]===T.model)?T.model:'',days:T.days,meals:settings().meals||['朝','昼','夜']});S.po=null;closeSheet();toast('設定を保存しました')},
+ tSave:()=>{if(!inClaude){lsSet(GK,String(T.gkey||'').trim());lsSet(GM,T.gmodel||'')}put('settings',{budget:Math.max(0,Math.round(+T.budget)||0),people:clamp(Math.round(+T.people)||1,1,12),mode:MODES[T.mode]?T.mode:'balance',model:MODELS.some(m=>m[0]===T.model)?T.model:'',days:T.days,freq:FREQS.some(f=>f[0]===+T.freq)?+T.freq:0,meals:settings().meals||['朝','昼','夜']});S.po=null;closeSheet();toast('設定を保存しました')},
  po:(v,b)=>{const k=b.dataset.k;S.po[k]=k==='days'?+v:v;render()},
  pm:v=>{const m=S.po.meals;if(m.includes(v)){if(m.length===1){toast('1つ以上選んでください');return}S.po.meals=m.filter(x=>x!==v)}else S.po.meals=MEALS.map(x=>x[0]).filter(x=>x===v||m.includes(x));render()},
  pp:v=>{S.po.people=clamp(S.po.people+(+v),1,12);render()},
- genPlan:async()=>{if(!aiOn()||S.planBusy)return;S.planBusy=true;render();const o=S.po,set=settings(),st=stats();
+ genPlan:async()=>{if(!aiOn()||S.planBusy)return;S.planBusy=true;render();const o=S.po,set=settings(),st=stats(),nd=planDays(o),tr=trips();
   const top=Object.values(st).sort((a,b)=>b.buyDates.length-a.buyDates.length).slice(0,12).map(s=>s.name).join('、');
   const mt=receipts().filter(r=>String(r.date).startsWith(today().slice(0,7))).reduce((a,r)=>a+(+r.total||0),0),rest=(+set.budget||0)-mt;
   const prompt=`あなたは管理栄養士で、家庭料理が得意な献立プランナーです。JSONだけを返してください（前後に文章やコードブロックを付けない）。
 条件:
-- 期間: ${today()} から ${o.days}日間
+- 期間: ${today()} から ${nd}日間（${md(today())}〜${md(addD(today(),nd-1))}）
+- 買い物に行く日: ${tr.dates.filter(d=>d<addD(today(),nd)).map(d=>d+'('+WD[pd(d).getDay()]+')').join('、')||'期間中なし（今日まとめて買う）'}${tr.freq?`（月${tr.freq}回のペース）`:''}
+- 1回の買い物の予算の目安: ${set.budget&&tr.freq?yen(set.budget/tr.freq):'指定なし'}
 - 作る食事: ${MEALS.filter(m=>o.meals.includes(m[0])).map(m=>m[1]).join('・')}（これ以外の食事は献立に入れない）
 - 人数: ${o.people}人
 - 自炊モード: ${MODES[o.mode].n}（${MODES[o.mode].d}）
 - 今月の食費の残り予算: ${set.budget?(rest>0?yen(rest):'ほぼなし（節約重視で）'):'指定なし'}
 - 冷蔵庫にあるもの（期限が近い順）: ${fridgeSummary()||'ほぼ空'}
 - よく買う食材: ${top||'データなし'}
-ルール: 期限が近い食材から優先して使い切る。たんぱく質・野菜・主食のバランスを1日単位で整える。同じ主菜を続けない。自炊モードの手間に合わせる。買い物リストは冷蔵庫にあるものを除き、期間中に必要な量を${o.people}人分でまとめる。塩・砂糖・醤油・味噌・油などの基本調味料は持っている前提。tipは20字程度。
+ルール: 期限が近い食材から優先して使い切る。たんぱく質・野菜・主食のバランスを1日単位で整える。同じ主菜を続けない。自炊モードの手間に合わせる。買い物リストは冷蔵庫にあるものを除き、期間中に必要な量を${o.people}人分で出す。各品目の date には、上の買い物日のうちどの日に買うかを入れる（生鮮品は使う日の直前の買い物日、日持ちするものは最初の買い物日。期間中に買い物日がなければ ${today()}）。1回の買い物の予算の目安を超えないようにする。塩・砂糖・醤油・味噌・油などの基本調味料は持っている前提。tipは20字程度。
 形式:
-{"summary":"この献立のねらいを1〜2文","nutrition":"栄養面のポイントを1〜2文","days":[{"date":"YYYY-MM-DD","meals":[{"slot":"${MEALS.filter(m=>o.meals.includes(m[0])).map(m=>m[0]).join('|')}","name":"料理名","minutes":15,"uses":["冷蔵庫から使う食材"],"tip":"ひとこと"}]}],"shopping":[{"name":"食材名","qty":1,"unit":"個","category":"${CATS.join('|')}","why":"何に使うか"}]}`;
+{"summary":"この献立のねらいを1〜2文","nutrition":"栄養面のポイントを1〜2文","days":[{"date":"YYYY-MM-DD","meals":[{"slot":"${MEALS.filter(m=>o.meals.includes(m[0])).map(m=>m[0]).join('|')}","name":"料理名","minutes":15,"uses":["冷蔵庫から使う食材"],"tip":"ひとこと"}]}],"shopping":[{"name":"食材名","qty":1,"unit":"個","category":"${CATS.join('|')}","date":"YYYY-MM-DD","why":"何に使うか"}]}`;
   try{const r=await ai(prompt,{json:true});const j=parseJSON(r.text);
    const days=(Array.isArray(j.days)?j.days:[]).filter(d=>d&&Array.isArray(d.meals)).map(d=>({date:isDate(d.date)?d.date:today(),meals:d.meals.map(m=>({slot:String(m.slot||''),name:String(m.name||''),minutes:Math.round(+m.minutes)||'',uses:(Array.isArray(m.uses)?m.uses:[]).map(String),tip:String(m.tip||'')}))}));
    if(!days.length)throw new Error('empty');
-   const shopping=(Array.isArray(j.shopping)?j.shopping:[]).map(x=>({name:String(x.name||''),qty:+x.qty||1,unit:String(x.unit||''),category:CATS.includes(x.category)?x.category:'その他',why:String(x.why||''),done:false})).filter(x=>x.name);
-   S.planBusy=false;const cur=settings();if(JSON.stringify(cur.meals||[])!==JSON.stringify(o.meals))put('settings',{...cur,meals:[...o.meals]});put('plan',{created:today(),mode:o.mode,meals:o.meals,people:o.people,days,shopping,summary:String(j.summary||''),nutrition:String(j.nutrition||'')});toast(shopping.length?'買うものをカレンダーの次の買い物日に入れました':'献立ができました')}
+   const shopping=(Array.isArray(j.shopping)?j.shopping:[]).map(x=>({name:String(x.name||''),qty:+x.qty||1,unit:String(x.unit||''),category:CATS.includes(x.category)?x.category:'その他',date:isDate(x.date)?x.date:'',why:String(x.why||''),done:false})).filter(x=>x.name);
+   S.planBusy=false;const cur=settings();if(JSON.stringify(cur.meals||[])!==JSON.stringify(o.meals))put('settings',{...cur,meals:[...o.meals]});put('plan',{created:today(),mode:o.mode,meals:o.meals,people:o.people,days,shopping,summary:String(j.summary||''),nutrition:String(j.nutrition||'')});toast(shopping.length?'買うものをカレンダーの買い物日に振り分けました':'献立ができました')}
   catch(e){S.planBusy=false;render();if(e&&e.code)aiErr(e);else toast('うまく作れませんでした。日数を減らしてもう一度お試しください')}},
  pBuy:v=>{const pl=cl(get('plan'));if(!pl)return;const x=pl.shopping[+v];if(!x)return;x.done=!x.done;put('plan',pl)},
  cook:v=>{S.draft=`「${v}」を作ります。材料と最初の手順を教えて`;A.go('chat')},
