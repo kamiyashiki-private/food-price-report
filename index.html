@@ -105,6 +105,40 @@ input[type=checkbox]{width:22px;height:22px;accent-color:var(--ac);margin:0;flex
 .sum3 div{padding:12px 6px;text-align:center}.sum3 div+div{border-left:1px solid var(--sep)}
 .sum3 b{display:block;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}.sum3 span{font-size:12px;color:var(--sub)}
 .emptyc{text-align:center;color:var(--sub);padding:40px 16px 12px;line-height:1.6}.emptyc b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+/* fridge visual: 実物の冷蔵庫（扉・ガラス棚・ドアポケット・引き出し） */
+.fleg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--sub);margin:12px 4px 14px}
+.fleg span{display:inline-flex;align-items:center;gap:6px}.fleg b{color:var(--ink);font-variant-numeric:tabular-nums}
+.fleg i{width:9px;height:9px;border-radius:50%}.fleg .bad{background:var(--bad)}.fleg .warn{background:var(--warn)}.fleg .ok{background:var(--ok)}
+.frg{--body:linear-gradient(160deg,light-dark(#fbfbfc,#3b3b40),light-dark(#dfe2e7,#26262a));position:relative;border-radius:24px;padding:9px;background:var(--body);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 14px 28px -16px rgba(0,0,0,.45),0 0 0 1px var(--sep);display:grid;gap:9px;margin:0 4px 20px}
+.frg::before,.frg::after{content:"";position:absolute;bottom:-9px;width:30px;height:9px;border-radius:0 0 7px 7px;background:light-dark(#9da1a8,#55555b)}
+.frg::before{left:26px}.frg::after{right:26px}
+.cmp{--in:light-dark(#eef4f9,#182028);--glass:light-dark(rgba(150,180,205,.55),rgba(140,170,200,.3));position:relative;border-radius:15px;background:radial-gradient(120% 60% at 50% 0,light-dark(rgba(255,251,232,.95),rgba(255,240,200,.10)),transparent 70%),var(--in);box-shadow:inset 0 2px 8px rgba(0,0,0,.13),inset 0 0 0 1px rgba(0,0,0,.04)}
+.cmp-l{position:absolute;top:6px;left:10px;font-size:12px;font-weight:600;color:var(--sub);display:flex;gap:5px;z-index:1;pointer-events:none}
+.cmp-l b{font-weight:600;color:var(--ink);opacity:.6}
+.top{display:grid;grid-template-columns:minmax(0,1fr) 100px;overflow:hidden;perspective:900px}
+.shelves{display:flex;flex-wrap:wrap;align-content:flex-start;padding:26px 4px 0;min-height:314px;background:repeating-linear-gradient(to bottom,transparent 0 90px,var(--glass) 90px 93px,transparent 93px 96px) 0 26px/100% 100% no-repeat}
+.door{padding:26px 6px 8px;background:light-dark(#f7f9fb,#1d2228);border-left:7px solid light-dark(#e1e4e9,#2c2f34);display:flex;flex-direction:column;gap:8px;box-shadow:inset 6px 0 10px -8px rgba(0,0,0,.35)}
+.pocket{position:relative;display:flex;justify-content:center;align-items:flex-end;min-height:84px;padding-bottom:4px}
+.pocket::after{content:"";position:absolute;left:-2px;right:-2px;bottom:0;height:26px;border-radius:2px 2px 9px 9px;background:light-dark(rgba(225,236,245,.72),rgba(80,100,120,.35));border:1px solid light-dark(rgba(140,165,190,.5),rgba(150,180,210,.25));pointer-events:none}
+.fd{position:relative;width:66px;height:96px;border:0;background:none;padding:0 1px 7px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;color:var(--ink);border-radius:10px}
+.fd svg{width:46px;height:46px;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.2));transition:transform .15s}
+.fd:active svg{transform:translateY(-3px)}
+.fd .nm{font-size:12px;line-height:1.25;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fd .tag{position:absolute;top:18px;right:0;z-index:1;font-size:11px;font-weight:700;line-height:1;color:#fff;border-radius:99px;padding:3px 6px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.fd .tag.bad{background:var(--bad)}.fd .tag.warn{background:var(--warn)}
+.fd.sm{width:44px;height:80px;padding-bottom:3px}.fd.sm svg{width:36px;height:36px}.fd.sm .nm{position:relative;z-index:1;font-size:11px}.fd.sm .tag{top:2px;right:-4px;font-size:10px;padding:2px 5px}
+.drw{padding:28px 6px 6px;min-height:124px}
+.drw .items,.pantry .items{display:flex;flex-wrap:wrap}
+.hdl{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:30%;height:7px;border-radius:9px;background:light-dark(#c4c8cf,#4b4c52);box-shadow:inset 0 1px 1px rgba(0,0,0,.15)}
+.drw.vg{--in:light-dark(#edf6ea,#16211a)}
+.drw.fz{--in:light-dark(#e8f0fb,#151e2b);background-image:radial-gradient(circle at 12% 30%,rgba(255,255,255,.55) 0 2px,transparent 3px),radial-gradient(circle at 78% 64%,rgba(255,255,255,.45) 0 1.5px,transparent 2.5px),radial-gradient(120% 60% at 50% 0,light-dark(rgba(255,255,255,.9),rgba(200,220,255,.08)),transparent 70%)}
+.emp{font-size:13px;color:var(--sub);padding:14px 6px;opacity:.8}
+.pantry{position:relative;margin:0 4px;border-radius:14px;padding:26px 6px 0;background:repeating-linear-gradient(to bottom,transparent 0 90px,light-dark(#b98d55,#6b5133) 90px 96px) 0 26px/100% 100% no-repeat,light-dark(#f4ead8,#2a231a);box-shadow:inset 0 2px 6px rgba(0,0,0,.1),0 0 0 1px var(--sep);min-height:122px}
+.pantry .emp{padding-bottom:40px}
+.door-cover{position:absolute;inset:0;z-index:4;border-radius:15px;background:var(--body,linear-gradient(160deg,#fbfbfc,#dfe2e7));background:linear-gradient(160deg,light-dark(#fbfbfc,#3b3b40),light-dark(#e3e6ea,#2a2a2f));box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);transform-origin:left center;transform:perspective(900px) rotateY(0);animation:dopen .85s .2s cubic-bezier(.35,.6,.2,1) forwards;pointer-events:none}
+.door-cover::after{content:"";position:absolute;right:16px;top:50%;width:7px;height:34%;transform:translateY(-50%);border-radius:9px;background:light-dark(#c4c8cf,#4b4c52)}
+@keyframes dopen{70%{opacity:1}to{transform:perspective(900px) rotateY(-100deg);opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.door-cover{display:none}.fd svg{transition:none}}
 /* plan */
 .meal-s{width:2.4em;font-size:13px;font-weight:600;color:var(--sub);flex:none}
 .step{display:flex;align-items:center;gap:6px;margin-left:auto}.step button{width:40px;height:40px;border-radius:10px;border:0;background:var(--fill);font-size:20px;color:var(--ink);padding:0}
@@ -250,7 +284,8 @@ const IC={cam:'<svg class="i" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11
 const VIEWS=['home','fridge','plan','cal','chat'];
 const S={docs:{},view:VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):'home',month:today().slice(0,7),calMonth:today().slice(0,7),open:new Set(),confirm:null,
  chat:[],draft:'',chatImg:null,chatBusy:false,planBusy:false,po:null,selDate:null,timerEnd:0,checks:{},remote:false,synced:false};
-try{S.checks=JSON.parse(localStorage.getItem('food-checks')||'{}')||{}}catch(e){}
+try{S.checks=JSON.parse(localStorage.getItem('food-checks')||'{}')||{};S.fv=localStorage.getItem('food-fv')||'fridge'}catch(e){}
+S.fAnim=S.view==='fridge';
 let col=null,sample=null,imgOK=false,aiReady=false,R=null,F=null,T=null;
 const chains={};
 const get=k=>S.docs[k];
@@ -391,24 +426,50 @@ V.home=()=>{
  ${Object.keys(byDate).length?Object.entries(byDate).map(([d,list])=>`<h2 class="gh"><span>${esc(md(d))}</span><span class="num">${yen(list.reduce((a,r)=>a+(+r.total||0),0))}</span></h2><section class="group">${list.map(r=>`<button class="r" data-act="openR" data-v="${esc(r.id)}"><span class="m"><span class="t1">${esc(r.store||'お店')}</span><span class="t2">${(r.items||[]).slice(0,5).map(i=>esc(i.name)).join('、')}</span></span><span class="v b">${yen(r.total)}</span><i class="chev"></i></button>`).join('')}</section>`).join('')
   :`<p class="note">この月の記録はまだありません。</p>`}
  ${S.remote?'':'<p class="note">データはこの端末の中に保存されています。設定の「バックアップを書き出す」でときどき保存しておくと安心です。</p>'}`};
+const SHAPE_OF={'野菜':'round','果物':'round','肉':'tray','魚':'tray','卵・乳製品':'carton','豆腐・大豆':'block','主食':'loaf','調味料':'bottle','飲料':'bottle','冷凍食品':'box','惣菜':'tub','菓子':'box','日用品':'box','その他':'tub'};
+const SHAPES={round:['<circle cx="24" cy="29" r="13.5"/>',15,43],tray:['<rect x="5" y="21" width="38" height="19" rx="5"/>',21,40],carton:['<path d="M14 15 24 6l10 9v28H14z"/>',15,43],
+ block:['<rect x="9" y="18" width="30" height="23" rx="4"/>',18,41],bottle:['<path d="M20.5 7h7v5l5 7v23a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3V19l5-7z"/>',12,45],
+ loaf:['<path d="M8 21a7 7 0 0 1 6-11h20a7 7 0 0 1 6 11v19a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z"/>',10,43],box:['<rect x="7" y="13" width="34" height="29" rx="4"/>',13,42],tub:['<path d="M9 19h30l-2.5 21.5a3 3 0 0 1-3 2.5h-19a3 3 0 0 1-3-2.5z"/>',19,43]};
+let fdN=0;
+function foodSVG(f){const k=SHAPE_OF[f.cat]||'tub',[sh,y0,y1]=SHAPES[k],c=CATCOL[f.cat]||'#aeaeb2',l=clamp(+f.left||0,0,1),id='fd'+(++fdN),ly=(y0+(1-l)*(y1-y0)).toFixed(1);
+ const extra={round:`<path d="M24 15.5c0-5 3-8.5 7.5-9.5-.8 5.2-3.2 8.6-7.5 9.5z" fill="#2f9e4f"/>`,tray:`<path d="M10 26h10" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/>`,
+  carton:`<path d="M14 15h20" stroke="${c}" stroke-width="2"/>`,bottle:`<rect x="20" y="3.5" width="8" height="4.5" rx="1.2" fill="${c}"/>`,
+  box:f.cat==='冷凍食品'?`<path d="M24 20v15M17.5 23.8l13 7.4M17.5 31.2l13-7.4" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".9"/>`:'',
+  tub:`<rect x="7" y="14" width="34" height="6" rx="3" fill="${c}"/>`,loaf:`<path d="M15 16v6M24 16v6M33 16v6" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>`,block:''}[k]||'';
+ return `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><clipPath id="${id}">${sh}</clipPath></defs><g clip-path="url(#${id})"><rect width="48" height="48" fill="${c}" opacity=".2"/><rect y="${ly}" width="48" height="48" fill="${c}"/></g><g fill="none" stroke="${c}" stroke-width="2">${sh}</g>${extra}</svg>`}
 V.fridge=()=>{
- const fr=fridge(),t=today(),fz=S.fz||'all';
+ const fr=fridge(),t=today(),fv=S.fv||'fridge';fdN=0;
  const bd=f=>{const d=diffD(t,f.exp);return d<0?['bad','期限切れ']:d===0?['bad','今日まで']:d===1?['bad','明日まで']:d<=3?['warn',`あと${d}日`]:['ok',`あと${d}日`]};
  const nb=fr.filter(f=>diffD(t,f.exp)<=1).length,nw=fr.filter(f=>{const d=diffD(t,f.exp);return d>1&&d<=3}).length,no=fr.length-nb-nw;
  const nt=suggest().trips[0];
  const lab=f=>{const l=+f.left||0;return l>=.99?'たっぷり':l>=.5?'残り半分':'残り少し'};
+ const byExp=(a,b)=>String(a.exp).localeCompare(String(b.exp));
+ const zoneOfItem=f=>ZONES[f.zone]?f.zone:'fridge';
+ const inZ=k=>fr.filter(f=>zoneOfItem(f)===k).sort(byExp);
+ const food=(f,small)=>{const d=diffD(t,f.exp),[c,tg]=d<0?['bad','期限切れ']:d===0?['bad','今日']:d===1?['bad','明日']:d<=3?['warn',d+'日']:['',''];
+  return `<button class="fd${small?' sm':''}" data-act="editF" data-v="${esc(f.id)}" aria-label="${esc(f.name)}　${bd(f)[1]}・${lab(f)}">${tg?`<span class="tag ${c}">${tg}</span>`:''}${foodSVG(f)}<span class="nm">${esc(f.name)}</span></button>`};
+ const top=inZ('fridge'),door=top.filter(f=>f.cat==='飲料'||f.cat==='調味料'),shelf=top.filter(f=>!door.includes(f));
+ const pockets=[];for(let i=0;i<Math.max(3,Math.ceil(door.length/2));i++)pockets.push(door.slice(i*2,i*2+2));
+ const veg=inZ('veg'),frz=inZ('freezer'),pan=inZ('pantry');
+ const lbl=(n,a)=>`<span class="cmp-l">${n}<b>${a.length}</b></span>`;
+ const anim=S.fAnim;S.fAnim=false;
+ const visual=`<div class="frg" aria-label="冷蔵庫の中身">
+  <div class="cmp top">${anim?'<span class="door-cover" aria-hidden="true"></span>':''}
+   <div class="shelves">${lbl('冷蔵室',shelf)}${shelf.map(f=>food(f)).join('')||''}</div>
+   <div class="door">${lbl('ドア',door)}${pockets.map(p=>`<div class="pocket">${p.map(f=>food(f,true)).join('')}</div>`).join('')}</div>
+  </div>
+  <div class="cmp drw vg">${lbl('野菜室',veg)}<span class="hdl"></span><div class="items">${veg.map(f=>food(f)).join('')||'<span class="emp">空っぽ</span>'}</div></div>
+  <div class="cmp drw fz">${lbl('冷凍室',frz)}<span class="hdl"></span><div class="items">${frz.map(f=>food(f)).join('')||'<span class="emp">空っぽ</span>'}</div></div>
+ </div>
+ <div class="pantry">${lbl('ストック棚（常温）',pan)}<div class="items">${pan.map(f=>food(f)).join('')||'<span class="emp">空っぽ</span>'}</div></div>`;
  const row=f=>{const [c,l]=bd(f);return `<button class="r" data-act="editF" data-v="${esc(f.id)}"><span class="m"><span class="t1">${esc(f.name)}</span><span class="t2">${esc(fmtQ(f.qty,f.unit))} ・ ${lab(f)} ・ ${esc(md(f.added))}購入</span></span><span class="badge b-${c}">${l}</span><i class="chev"></i></button>`};
- const zones=Object.keys(ZONES).filter(k=>fz==='all'||fz===k);
- const body=zones.map(k=>{const it=fr.filter(f=>(ZONES[f.zone]?f.zone:'fridge')===k).sort((a,b)=>String(a.exp).localeCompare(String(b.exp)));
-  if(!it.length)return fz==='all'?'':`<p class="note">${ZONES[k]}には何も入っていません。</p>`;
-  return `<h2 class="gh"><span>${ZONES[k]}</span><span>${it.length}品</span></h2><section class="group">${it.map(row).join('')}</section>`}).join('');
- const segs=[['all','すべて'],['fridge','冷蔵'],['veg','野菜'],['freezer','冷凍'],['pantry','常温']];
- if(!fr.length)return `<div class="emptyc"><b>冷蔵庫は空です</b>レシートを読み取ると、買った食材が自動で追加されます。</div><label class="btn filebtn">${IC.cam}レシートを読み取る<input type="file" accept="image/*" class="scanIn"></label><div style="margin-top:8px"><button class="btn sec" data-act="newF">手で追加</button></div>`;
- return `<section class="group sum3"><div><b class="danger">${nb}</b><span>明日まで・期限切れ</span></div><div><b class="warn-c">${nw}</b><span>3日以内</span></div><div><b class="ok-c">${no}</b><span>余裕あり</span></div></section>
- ${nt?`<section class="group" style="margin-top:12px"><button class="r" data-act="go" data-v="cal"><span class="m"><span class="t1">次の買い物　${esc(md(nt.date))}</span><span class="t2">${nt.items.length?nt.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しが必要なものはありません'}</span></span><span class="v">${nt.items.length}品</span><i class="chev"></i></button></section>`:''}
- <div class="segc" style="margin-top:16px">${segs.map(([k,n])=>`<button data-act="fz" data-v="${k}" aria-pressed="${fz===k}">${n}</button>`).join('')}</div>
- ${body}
- <p class="foot" style="margin-top:12px">食材をタップすると、残りの量の変更や「使い切った」の記録ができます。</p>`};
+ const list=Object.keys(ZONES).map(k=>{const it=inZ(k);return it.length?`<h2 class="gh"><span>${ZONES[k]}</span><span>${it.length}品</span></h2><section class="group">${it.map(row).join('')}</section>`:''}).join('')||'<p class="note">まだ何も入っていません。</p>';
+ return `<div class="segc">${[['fridge','冷蔵庫で見る'],['list','リストで見る']].map(([k,n])=>`<button data-act="fv" data-v="${k}" aria-pressed="${fv===k}">${n}</button>`).join('')}</div>
+ <div class="fleg"><span><i class="bad"></i>明日まで・期限切れ <b>${nb}</b></span><span><i class="warn"></i>3日以内 <b>${nw}</b></span><span><i class="ok"></i>余裕あり <b>${no}</b></span></div>
+ ${fv==='list'?list:visual}
+ ${!fr.length?`<div class="row" style="margin-top:4px;flex-wrap:nowrap"><label class="btn filebtn">${IC.cam}レシートを読み取る<input type="file" accept="image/*" class="scanIn"></label><button class="btn sec" style="width:auto;flex:none" data-act="newF">手で追加</button></div>`:''}
+ ${nt?`<section class="group" style="margin-top:16px"><button class="r" data-act="go" data-v="cal"><span class="m"><span class="t1">次の買い物　${esc(md(nt.date))}</span><span class="t2">${nt.items.length?nt.items.slice(0,5).map(i=>esc(i.name)).join('、'):'買い足しが必要なものはありません'}</span></span><span class="v">${nt.items.length}品</span><i class="chev"></i></button></section>`:''}
+ <p class="foot" style="margin-top:12px">${fr.length?'中身の色の高さが残りの量です。食材をタップすると、残量の変更や「使い切った」の記録ができます。':'レシートを読み取ると、買った食材がここに並びます。'}</p>`};
 V.plan=()=>{
  const set=settings();if(!S.po)S.po={mode:set.mode||'balance',days:+set.freq?'trip':5,meals:Array.isArray(set.meals)&&set.meals.length?[...set.meals]:['朝','昼','夜'],people:+set.people||1};const o=S.po,pl=get('plan');
  const seg=(k,vals)=>`<div class="segc">${vals.map(([v,n])=>`<button data-act="po" data-k="${k}" data-v="${v}" aria-pressed="${String(o[k])===String(v)}">${n}</button>`).join('')}</div>`;
@@ -616,6 +677,7 @@ const A={
  cNext:()=>{const d=pd(S.calMonth+'-01');d.setMonth(d.getMonth()+1);S.calMonth=ds(d).slice(0,7);render()},
  openR:v=>{S.confirm=null;renderRD(v)},
  fz:v=>{S.fz=v;render()},
+ fv:v=>{S.fv=v;try{localStorage.setItem('food-fv',v)}catch(e){}render()},
  delR:v=>{if(S.confirm!==v){S.confirm=v;renderRD(v);return}closeSheet();del(v);const fr=fridge();if(fr.some(f=>f.rid===v))setFridge(fr.filter(f=>f.rid!==v));toast('レシートを削除しました')},
  editR:v=>{const r=get(v);if(!r)return;R={...cl(r),editId:v,items:cl(r.items||[]).map(i=>({...i,toFridge:false}))};if(!R.items.length)R.items=[blankItem()];renderReview()},
  manual:()=>{R={date:today(),time:'',store:'',items:[blankItem()],advice:''};renderReview()},
@@ -717,7 +779,7 @@ function onIn(e){const t=e.target;
  if(t.id==='chatIn'){S.draft=t.value;grow()}}
 document.addEventListener('input',onIn);document.addEventListener('change',onIn);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#sheet').hidden)closeSheet();if(e.target.id==='chatIn'&&e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();send()}});
-window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(VIEWS.includes(v)){S.view=v;window.scrollTo(0,0);render(true)}});
+window.addEventListener('hashchange',()=>{const v=location.hash.slice(1);if(VIEWS.includes(v)){S.view=v;if(v==='fridge')S.fAnim=true;window.scrollTo(0,0);render(true)}});
 
 /* ---------- boot ---------- */
 loadLocal();render(true);
